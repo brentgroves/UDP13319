@@ -1,12 +1,17 @@
 // https://node.readthedocs.io/en/latest/api/dgram/
 var udp = require("dgram");
-var moment = require('moment');
+const mqtt = require('mqtt');
+var moment = require("moment");
 // const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
+const { exit } = require("process");
 
-var { MQTT_SERVER, UDP_PORT } = process.env;
+// var { MQTT_SERVER, UDP_PORT } = process.env;
+const MQTT_SERVER = 'localhost';
+const UDP_PORT = 2222;
 common.log(`MQTT_SERVER=${MQTT_SERVER}`);
 common.log(`UDP_PORT=${UDP_PORT}`);
+
 // --------------------creating a udp server --------------------
 
 async function main() {
@@ -26,7 +31,6 @@ async function main() {
     try {
       common.log("Data received from client : " + msg.toString());
       common.log(`Data received in hex =>${msg.toString("hex")}`);
-      common.log(`Data received in ascii =>${msg.toString("ascii")}`);
       common.log(
         "Received %d bytes from %s:%d\n",
         msg.length,
@@ -34,7 +38,7 @@ async function main() {
         info.port
       );
 
-  /*
+      /*
   buffer.indexOf(value, start, encoding);
   */
       let startChar = msg.indexOf("}", 0);
@@ -49,24 +53,23 @@ async function main() {
       }
 
       common.log(`msg.indexOf(',', startChar)=>${firstComma}`);
-      var id = msg.slice(startChar + 1, firstComma);
-      common.log(`CNC id=>${id}`);
-      var strId = id.toString();
-      var numId = Number(strId); // returns NaN
-      if (Number.isNaN(numId)) {
-        common.log(`strId is NOT a number`);
-        throw new Error("strId isNAN");
+      var cnc = msg.slice(startChar + 1, firstComma);
+      common.log(`CNC =>${cnc}`);
+      var strCNC = cnc.toString();
+      var numCNC = Number(strCNC); // returns NaN
+      if (Number.isNaN(numCNC)) {
+        throw new Error("strCNC isNAN");
       } else {
-        common.log(`strId IS a number`);
+        common.log(`strCNC IS a number`);
       }
 
-      let endOfFrame = msg.indexOf('%',firstComma);
+      let endOfFrame = msg.indexOf("%", firstComma);
       common.log(`1. endOfFrame=>${endOfFrame}`);
-      if(-1===endOfFrame){
+      if (-1 === endOfFrame) {
         endOfFrame = msg.length;
         common.log(`2. endOfFrame=>${endOfFrame}`);
       }
-      
+
       var bufPartCounter = msg.slice(firstComma + 1, endOfFrame);
       common.log(`bufPartCounter=>${bufPartCounter}`);
       var strPartCounter = bufPartCounter.toString().trim();
@@ -79,29 +82,20 @@ async function main() {
       }
       const transDate = moment(new Date()).format("YYYY-MM-DDTHH:mm:ss");
       common.log(`transDate=>${transDate}`);
-
-      let value = parseInt(dataValue.value.value.toString());
-      let msg = {
-        updateId: config.nodes[i].updateId,
-        nodeId: config.nodes[i].nodeId,
-        name: config.nodes[i].name,
-        plexus_Customer_No: config.nodes[i].plexus_Customer_No,
-        pcn: config.nodes[i].pcn,
-        workcenter_Key: config.nodes[i].workcenter_Key,
-        workcenter_Code: config.nodes[i].workcenter_Code,
-        cnc: config.nodes[i].cnc,
-        value: value,
+      //let partCounter = parseInt(bufPartCounter.toString().trim());
+      let jsonMsg = {
+        cnc: numCNC,
+        partCounter: numPartCounter,
         transDate: transDate
       };
 
-      let msgString = JSON.stringify(msg);
-      common.log(`Kep13319 publish => ${msgString}`);
-      mqttClient.publish('Kep13319', msgString);
-
+      let msgString = JSON.stringify(jsonMsg);
+      common.log(`UDP13319 publish => ${msgString}`);
+      mqttClient.publish("UDP13319", msgString);
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
-      common.log("Data sent !!!");
+      // 
     }
   });
 
@@ -120,9 +114,8 @@ async function main() {
   server.on("close", function () {
     common.log("Socket is closed !");
   });
-
+  common.log(`Before bind, UDP_PORT=>${UDP_PORT} `);
   server.bind(UDP_PORT);
 }
 
 main();
-
