@@ -6,9 +6,9 @@ var moment = require("moment");
 const common = require("@bgroves/common");
 const { exit } = require("process");
 
-// var { MQTT_SERVER, UDP_PORT } = process.env;
-const MQTT_SERVER = 'localhost';
-const UDP_PORT = 2222;
+var { MQTT_SERVER, UDP_PORT } = process.env;
+// const MQTT_SERVER = 'localhost';
+// const UDP_PORT = 2222;
 common.log(`MQTT_SERVER=${MQTT_SERVER}`);
 common.log(`UDP_PORT=${UDP_PORT}`);
 
