@@ -5,20 +5,20 @@ var moment = require("moment");
 // const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
 const { exit } = require("process");
+const { start } = require("repl");
 
-var { MQTT_SERVER, UDP_PORT } = process.env;
-// const MQTT_SERVER = 'localhost';
-// const UDP_PORT = 2222;
-common.log(`MQTT_SERVER=${MQTT_SERVER}`);
-common.log(`UDP_PORT=${UDP_PORT}`);
-
+// var { MQTT_SERVER, UDP_PORT } = process.env;
+const MQTT_SERVER = 'localhost';
+const UDP_PORT = 2222;
+var nextLine = 1;
 // --------------------creating a udp server --------------------
 
 async function main() {
-  const mqttClient = mqtt.connect(`mqtt://${MQTT_SERVER}`);
+//  const mqttClient = mqtt.connect(`mqtt://${MQTT_SERVER}`);
 
   // creating a udp server
   var server = udp.createSocket("udp4");
+  
 
   // emits when any error occurs
   server.on("error", function (error) {
@@ -26,72 +26,166 @@ async function main() {
     server.close();
   });
 
+
   // emits on new datagram msg
   server.on("message", function (msg, info) {
     try {
-      common.log("Data received from client : " + msg.toString());
-      common.log(`Data received in hex =>${msg.toString("hex")}`);
-      common.log(
+      console.log("1Data received from client : " + msg.toString());
+      console.log(`Data received in hex =>${msg.toString("hex")}`);
+      console.log(
         "Received %d bytes from %s:%d\n",
-        msg.length,
-        info.address,
-        info.port
+        msg.length
       );
-
-      /*
-  buffer.indexOf(value, start, encoding);
-  */
-      let startChar = msg.indexOf("}", 0);
-      common.log(`msg.indexOf('}', 0)=>${startChar}`);
-      if (startChar === -1) {
-        throw new Error("No startChar in message");
+      if(msg.length<3){
+        console.log(`msg.length<3`);
+        return;
       }
+      if(nextLine==1)
+      { 
 
-      let firstComma = msg.indexOf(",", startChar);
-      if (firstComma === -1) {
-        throw new Error("No comma in message");
+        nextLine = 2;
+        let startChar = 0;
+        if(0x12==msg[0])
+        {
+          console.log(`0x12==msg[0]`);
+          startChar++;
+  
+        } 
+        var cnc = msg.slice(startChar, startChar+10);
+        var strCNC = cnc.toString();
+        var numCNC = Number(strCNC); // returns NaN
+        if (Number.isNaN(numCNC)) {
+          throw new Error("strCNC isNAN");
+        } else {
+          console.log(`strCNC ${strCNC} IS a number`);
+        }
+        var partCounter = startChar+10;
+        var sPartCounter = msg.slice(partCounter, partCounter+10);
+        var nPartCounter = Number(sPartCounter); // returns NaN
+        if (Number.isNaN(nPartCounter)) {
+          throw new Error("Tool1 isNAN");
+        } else {
+          console.log(`PartCounter.start=${partCounter},end=${partCounter+10} = ${sPartCounter}`);
+        }
+        var tool1 = partCounter+10;
+        var sTool1 = msg.slice(tool1, tool1+10);
+        var nTool1 = Number(sTool1); // returns NaN
+        if (Number.isNaN(nTool1)) {
+          throw new Error("Tool1 isNAN");
+        } else {
+          console.log(`Tool1.start=${tool1},end=${tool1+10} = ${sTool1}`);
+        }
+        var tool2 = tool1+10;
+        var sTool2 = msg.slice(tool2, tool2+10);
+        var nTool2 = Number(sTool2); // returns NaN
+        if (Number.isNaN(nTool2)) {
+          throw new Error("Tool2 isNAN");
+        } else {
+          console.log(`Tool2 ${sTool2} IS a number`);
+        }
+        var tool3 = tool2+10;
+        var sTool3 = msg.slice(tool3, tool3+10);
+        var nTool3 = Number(sTool3); // returns NaN
+        if (Number.isNaN(nTool3)) {
+          throw new Error("Tool3 isNAN");
+        } else {
+          console.log(`Tool3 ${sTool3} IS a number`);
+        }
+        var tool4 = tool3+10;
+        var sTool4 = msg.slice(tool4, tool4+10);
+        var nTool4 = Number(sTool4); // returns NaN
+        if (Number.isNaN(nTool4)) {
+          throw new Error("Tool4 isNAN");
+        } else {
+          console.log(`Tool4 ${sTool4} IS a number`);
+        }
+        var tool5 = tool4+10;
+        var sTool5 = msg.slice(tool5, tool5+10);
+        var nTool5 = Number(sTool5); // returns NaN
+        if (Number.isNaN(nTool5)) {
+          throw new Error("Tool5 isNAN");
+        } else {
+          console.log(`Tool5 ${sTool5} IS a number`);
+        }
+        var tool6 = tool5+10;
+        var sTool6 = msg.slice(tool6, tool6+10);
+        var nTool6 = Number(sTool6); // returns NaN
+        if (Number.isNaN(nTool6)) {
+          throw new Error("Tool6 isNAN");
+        } else {
+          console.log(`Tool6 ${sTool6} IS a number`);
+        }
+        var tool7 = tool6+10;
+        var sTool7 = msg.slice(tool7, tool7+10);
+        var nTool7 = Number(sTool7); // returns NaN
+        if (Number.isNaN(nTool7)) {
+          throw new Error("Tool7 isNAN");
+        } else {
+          console.log(`Tool7 ${sTool7} IS a number`);
+        }
+        var tool8 = tool7+10;
+        var sTool8 = msg.slice(tool8, tool8+10);
+        var nTool8 = Number(sTool8); // returns NaN
+        if (Number.isNaN(nTool8)) {
+          throw new Error("Tool8 isNAN");
+        } else {
+          console.log(`Tool8 ${sTool8} IS a number`);
+        }
+        line = 2;
       }
+      else
+      {
+        nextLine = 1;
+        let startCharLine2 = msg.indexOf(":", 0);
+        startCharLine2=startCharLine2+1;
+  
+        var tool9 = startCharLine2;
+        var sTool9 = msg.slice(tool9, tool9+10);
+        var nTool9 = Number(sTool9); // returns NaN
+        if (Number.isNaN(nTool9)) {
+          throw new Error("Tool9 isNAN");
+        } else {
+          console.log(`Tool9 ${sTool9} IS a number`);
+        }
+        var tool10 = tool9+10;
+        var sTool10 = msg.slice(tool10, tool10+10);
+        var nTool10 = Number(sTool10); // returns NaN
+        if (Number.isNaN(nTool10)) {
+          throw new Error("Tool10 isNAN");
+        } else {
+          console.log(`Tool10 ${sTool10} IS a number`);
+        }
+        var tool11 = tool10+10;
+        var sTool11 = msg.slice(tool11, tool11+10);
+        var nTool11 = Number(sTool11); // returns NaN
+        if (Number.isNaN(nTool11)) {
+          throw new Error("Tool11 isNAN");
+        } else {
+          console.log(`Tool11 ${sTool11} IS a number`);
+        }
+        var tool12 = tool11+10;
+        var sTool12 = msg.slice(tool12, tool12+10);
+        var nTool12 = Number(sTool12); // returns NaN
+        if (Number.isNaN(nTool12)) {
+          throw new Error("Tool12 isNAN");
+        } else {
+          console.log(`Tool12 ${sTool12} IS a number`);
+        }
 
-      common.log(`msg.indexOf(',', startChar)=>${firstComma}`);
-      var cnc = msg.slice(startChar + 1, firstComma);
-      common.log(`CNC =>${cnc}`);
-      var strCNC = cnc.toString();
-      var numCNC = Number(strCNC); // returns NaN
-      if (Number.isNaN(numCNC)) {
-        throw new Error("strCNC isNAN");
+      }    
+
+
+/*
+      var sTool3 = msg.slice(31, 40);
+      console.log(`Tool2= ${sTool3}`);
+      var nTool3 = Number(sTool3); // returns NaN
+      if (Number.isNaN(nTool3)) {
+        throw new Error("Tool3 isNAN");
       } else {
-        common.log(`strCNC IS a number`);
+        console.log(`Tool3 IS a number`);
       }
+*/
 
-      let endOfFrame = msg.indexOf("%", firstComma);
-      common.log(`1. endOfFrame=>${endOfFrame}`);
-      if (-1 === endOfFrame) {
-        endOfFrame = msg.length;
-        common.log(`2. endOfFrame=>${endOfFrame}`);
-      }
-
-      var bufPartCounter = msg.slice(firstComma + 1, endOfFrame);
-      common.log(`bufPartCounter=>${bufPartCounter}`);
-      var strPartCounter = bufPartCounter.toString().trim();
-      var numPartCounter = Number(strPartCounter); // returns NaN
-
-      if (Number.isNaN(numPartCounter)) {
-        throw new Error(`partCounter is NOT a number =>${strPartCounter}`);
-      } else {
-        common.log(`partCounter IS a number=>${strPartCounter}`);
-      }
-      const transDate = moment(new Date()).format("YYYY-MM-DDTHH:mm:ss");
-      common.log(`transDate=>${transDate}`);
-      //let partCounter = parseInt(bufPartCounter.toString().trim());
-      let jsonMsg = {
-        cnc: numCNC,
-        partCounter: numPartCounter,
-        transDate: transDate
-      };
-
-      let msgString = JSON.stringify(jsonMsg);
-      common.log(`UDP13319 publish => ${msgString}`);
-      mqttClient.publish("UDP13319", msgString);
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
@@ -105,16 +199,12 @@ async function main() {
     var port = address.port;
     var family = address.family;
     var ipaddr = address.address;
-    common.log("Server is listening at port" + port);
-    common.log("Server ip :" + ipaddr);
-    common.log("Server is IP4/IP6 : " + family);
   });
 
   //emits after the socket is closed using socket.close();
   server.on("close", function () {
     common.log("Socket is closed !");
   });
-  common.log(`Before bind, UDP_PORT=>${UDP_PORT} `);
   server.bind(UDP_PORT);
 }
 
