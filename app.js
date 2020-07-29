@@ -139,7 +139,7 @@ async function main() {
           }
         });
         var rTool1 = config.tools[iTool1]; // rTool1 is a reference to the tool1 config.tools[] element.
-        
+        // This could be replaced a variable in tool[].IncrementBy
         if (nTool1 < 10) {
           /* 
           We need to record the tool change during this time period
