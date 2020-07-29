@@ -8,8 +8,8 @@ const { exit } = require("process");
 const { start } = require("repl");
 
 var { MQTT_SERVER, UDP_PORT } = process.env;
-// const MQTT_SERVER = 'localhost';
-// const UDP_PORT = 2222;
+//const MQTT_SERVER = 'localhost';
+//const UDP_PORT = 2222;
 var nextLine = 1;
 // --------------------creating a udp server --------------------
 
@@ -62,26 +62,24 @@ async function main() {
         }
 
         // TODO: PARSE OriginalProcessID
-        /*
         var originalProcessID = startChar + 10;
-        var sOriginalProcessID = msg.slice(originalProcessID, originalProcessID + 10);
+        var sOriginalProcessID = msg.slice(originalProcessID, originalProcessID + 10).toString().trim();
         var nOriginalProcessID = Number(sOriginalProcessID); // returns NaN
         if (Number.isNaN(nOriginalProcessID)) {
-          throw new Error("OriginalProcessID isNAN");
+          throw new Error("Abort: OriginalProcessID isNAN");
         } else {
           common.log(`OriginalProcessID=${sOriginalProcessID}`);
           // 
         }
 
-*/
-        let nOriginalProcessID = 49396; // Replace this line with the code above.
+        // let nOriginalProcessID = 49396; // Replace this line with the code above.
         
         // All Data collected from the Okuma should be in the format of CNC,ToolList OriginalProcessID,Part Counter,
         // Tool counters.  The OriginalProcessID is included in case the CNC is setup to run multiple jobs.
         // Currently, CNC 103 is not outputing the ToolList OriginalProcessID
 
         // TODO: Change this line to originalProcessID + 10 after adding code above
-        var partCounter = startChar + 10;
+        var partCounter = originalProcessID + 10;
         var sPartCounter = msg.slice(partCounter, partCounter + 10).toString().trim();
         var nPartCounter = Number(sPartCounter); // returns NaN
         if (Number.isNaN(nPartCounter)) {
@@ -139,8 +137,10 @@ async function main() {
           }
         });
         var rTool1 = config.tools[iTool1]; // rTool1 is a reference to the tool1 config.tools[] element.
+        var publishNow=false;
         // ToDo: This could be replaced a variable in tool[].IncrementBy
-        if (nTool1 < 10) {
+        if (nTool1 < 10) 
+        {
           /* 
           We need to record the tool change during this time period
           if we have not already done so. 
@@ -153,25 +153,13 @@ async function main() {
           first starts we will not see this condition as tool change if
           the common variable happens to be less than 10.
           */
-          if (rTool1.PublishedToolChange === 0) {
-            /*
-            	ToolTrackerKey int(11) NOT NULL,
-              Count int NOT NULL,
-              TransDate datetime NOT NULL,
-            */
-
-            let tcMsg = {
-              ToolTrackerKey: rTool1.ToolTrackerKey,
-              Count: rTool1.RunningTotal,
-              TransDate: transDate,
-            };
-
-            let tcMsgString = JSON.stringify(tcMsg);
-            common.log(`Publish to ToolChange => ${tcMsgString}`);
-            mqttClient.publish("ToolChange", tcMsgString);
-            rTool1.PublishedToolChange = 1;
+          if (rTool1.PublishedToolChange === 0) 
+          {
+            publishNow=true;
           }
-        } else {
+        } 
+        else 
+        {
           // The counter is above 10 so we should have already published
           // any previous tool change if needed; so the next time the
           // counter gets set back to less than 10 a new tool change
@@ -193,7 +181,7 @@ async function main() {
           ((nTool1 - rTool1.IncrementBy) === rTool1.Value) 
         ) 
         {
-          config.tools[iTool1].RunningTotal += rTool1.IncrementBy;
+          rTool1.RunningTotal += rTool1.IncrementBy;
         }
         else if ((nTool1 === rTool1.Value)) {
           // Since the GCode subroutine gets called every pallet change
@@ -201,6 +189,25 @@ async function main() {
           // Do nothing in this case.
         }
         common.log(`rTool1.RunningTotal=${rTool1.RunningTotal}`);
+
+        if(publishNow)
+        {
+          // ASYNC Problem with Count getting updated before
+          // Running Total is updated 
+          //let Count = rTool1.RunningTotal; 
+          let tcMsg = {
+            ToolTrackerKey: rTool1.ToolTrackerKey,
+            Count: rTool1.RunningTotal,
+            TransDate: transDate,
+          };
+
+          let tcMsgString = JSON.stringify(tcMsg);
+          common.log(`Publish ToolChange => ${tcMsgString}`);
+          mqttClient.publish("ToolChange", tcMsgString);
+          rTool1.PublishedToolChange = 1;
+          rTool1.RunningTotal=0;  // nTool1 may be IncrementBy
+          publishNow = false;
+        }
         // Update Value with current Common Variable value just recieved
         rTool1.Value = nTool1; 
         common.log(`rTool1.Value=${rTool1.Value}`);
