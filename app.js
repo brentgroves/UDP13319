@@ -1,6 +1,6 @@
 // https://node.readthedocs.io/en/latest/api/dgram/
 var udp = require("dgram");
-const mqtt = require('mqtt');
+const mqtt = require("mqtt");
 var moment = require("moment");
 const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
@@ -20,8 +20,6 @@ async function main() {
 
   // creating a udp server
   var server = udp.createSocket("udp4");
-  
-  
 
   // emits when any error occurs
   server.on("error", function (error) {
@@ -29,233 +27,200 @@ async function main() {
     server.close();
   });
 
-
   // emits on new datagram msg
   server.on("message", function (msg, info) {
     try {
-      common.log("1Data received from client : " + msg.toString());
+      common.log("Data received from client : " + msg.toString());
       common.log(`Data received in hex =>${msg.toString("hex")}`);
-      common.log(
-        "Received %d bytes from %s:%d\n",
-        msg.length
-      );
-      common.log(`UDP13319.3 ->config.tools=>${config.tools}`);
-      common.log(`UDP13319.3 ->config.tools[0]=>${config.tools[0]}`);
-      common.log(`UDP13319.3 ->config.tools[0].Count=>${config.tools[0].Count}`);
-        if(msg.length<3){
-        common.log(`msg.length<3`);
+      common.log("Received %d bytes from %s:%d\n", msg.length);
+      // We recieve DC2,%,DC4 in datagrams by themself but receive all the common variable in one datagram.
+      if (msg.length < 3) {
+        common.log(`Abort: msg.length<3`);
         return;
       }
-      if(nextLine==1)
-      { 
 
-        nextLine = 2;
+      const transDate = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+      common.log(`ToolChange transDate=>${transDate}`);
+
+      // We receive up to 10 fixed length records in one datagram.  If we have more than 10 fixed length units
+      // that are being sent then we will receive them in multiple datagrams.
+      if (nextLine == 1) {
+        nextLine = 2; // the next datagram to be recieved should be line #2 with the 11th through 20th fixed length units.
         let startChar = 0;
-        if(0x12==msg[0])
-        {
-          common.log(`0x12==msg[0]`);
-          startChar++;
-  
-        } 
-        var cnc = msg.slice(startChar, startChar+10);
-        var strCNC = cnc.toString();
-        var numCNC = Number(strCNC); // returns NaN
-        if (Number.isNaN(numCNC)) {
-          throw new Error("strCNC isNAN");
-        } else {
-          common.log(`strCNC ${strCNC} IS a number`);
+        if (0x12 == msg[0]) {
+          common.log(`Increment startChar: 0x12==msg[0]`);
+          startChar++; // sometimes DC2 will arrive with line #1 and sometimes it is in a datagram by itself.
         }
-        var partCounter = startChar+10;
-        var sPartCounter = msg.slice(partCounter, partCounter+10);
+
+        var cnc = msg.slice(startChar, startChar + 10);
+        var sCNC = cnc.toString().trim();
+        var nCNC = Number(sCNC); // returns NaN
+        if (Number.isNaN(nCNC)) {
+          throw new Error("Abort: sCNC isNAN");
+        } else {
+          common.log(`CNC = ${sCNC}`);
+        }
+
+        // TODO: PARSE OriginalProcessID
+        /*
+        var originalProcessID = startChar + 10;
+        var sOriginalProcessID = msg.slice(originalProcessID, originalProcessID + 10);
+        var nOriginalProcessID = Number(sOriginalProcessID); // returns NaN
+        if (Number.isNaN(nOriginalProcessID)) {
+          throw new Error("OriginalProcessID isNAN");
+        } else {
+          common.log(`OriginalProcessID=${sOriginalProcessID}`);
+          // 
+        }
+
+*/
+        let nOriginalProcessID = 49396; // Replace this line with the code above.
+        
+        // All Data collected from the Okuma should be in the format of CNC,ToolList OriginalProcessID,Part Counter,
+        // Tool counters.  The OriginalProcessID is included in case the CNC is setup to run multiple jobs.
+        // Currently, CNC 103 is not outputing the ToolList OriginalProcessID
+
+        // TODO: Change this line to originalProcessID + 10 after adding code above
+        var partCounter = startChar + 10;
+        var sPartCounter = msg.slice(partCounter, partCounter + 10).toString().trim();
         var nPartCounter = Number(sPartCounter); // returns NaN
         if (Number.isNaN(nPartCounter)) {
-          throw new Error("Tool1 isNAN");
+          throw new Error("Abort: PartCounter isNAN");
         } else {
-          common.log(`PartCounter.start=${partCounter},end=${partCounter+10} = ${sPartCounter}`);
+          common.log(`PartCounter=${sPartCounter}`);
+          //
         }
-        var objTool1 = config.tools[0];
-        var tool1 = partCounter+10;
-        var sTool1 = msg.slice(tool1, tool1+10);
+        //  looks through each element and stops at first match.
+        // Make sure first match is the part counter node.
+        let iNode = config.nodes.findIndex((el) => el.cnc === sCNC); // returns '4 foot tail'
+        common.log(`sCNC=${sCNC},iNode = ${iNode}`)
+        // Only publish if value has changed.
+        if(nPartCounter!==config.nodes[iNode].value)
+        {
+          let kepMsg = {
+            updateId: config.nodes[iNode].updateId,
+            nodeId: config.nodes[iNode].nodeId,
+            name: config.nodes[iNode].name,
+            plexus_Customer_No: config.nodes[iNode].plexus_Customer_No,
+            pcn: config.nodes[iNode].pcn,
+            workcenter_Key: config.nodes[iNode].workcenter_Key,
+            workcenter_Code: config.nodes[iNode].workcenter_Code,
+            cnc: config.nodes[iNode].cnc,
+            value: nPartCounter,
+            transDate: transDate,
+          };
+
+          let kepMsgString = JSON.stringify(kepMsg);
+          common.log(`Kep13319 publish => ${kepMsgString}`);
+          mqttClient.publish("Kep13319", kepMsgString);
+          config.nodes[iNode].value=nPartCounter;
+        }
+
+        // TODO: Add this code to a subroutine
+        var tool1 = partCounter + 10;
+        var sTool1 = msg.slice(tool1, tool1 + 10).toString().trim();
         var nTool1 = Number(sTool1); // returns NaN
         if (Number.isNaN(nTool1)) {
-          throw new Error("Tool1 isNAN");
+          throw new Error("Abort: Tool1 isNAN");
         } else {
-          common.log(`Tool1.start=${tool1},end=${tool1+10} = ${sTool1}`);
+          common.log(`Tool1 has the value: ${sTool1}`);
         }
-        const transDate = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-        common.log(`ToolChange transDate=>${transDate}`);
-        if(nTool1<10)
-        {
+
+        // Returns an index of the 1st tool for this CNC/OriginalProcessID combination
+        let iTool1 = config.tools.findIndex((el) => {
+          if (
+            el.CNC === nCNC &&
+            el.OriginalProcessID === nOriginalProcessID &&
+            1 === el.CNC_PID_Index  // tool1's CNC_PID_Index = 1;
+          ) {
+            return true;
+          } else {
+            return false;
+          }
+        });
+        var rTool1 = config.tools[iTool1]; // rTool1 is a reference to the tool1 config.tools[] element.
+        
+        if (nTool1 < 10) {
           /* 
           We need to record the tool change during this time period
-          if we have not already done so.
-          */ 
-           if(config.tools[0].RecordedToolChange===0)
-           {
-                // TODO: Publish the running total
-                config.tools[0].RecordedToolChange=1
-                config.tools[0].RunningTotal=0;
-           }
-
-            /*
-            We may be receiving this value multiple times.
-            If value is greater than nTool1 then the tool change
-            probably just happened.
-            */
-           if(((nTool1)<config.tools[0].Value) || ((nTool1-2)===config.tools[0].Value))
-           {
-             config.tools[0].RunningTotal+=2; 
-           }
-  
-
-        }
-        else
-        {
-          config.tools[0].JustStarting=0;
-          /*
-          if counter was set back if previous value was 2 less than 
-          current value then increment RunningTotal. We may be receiving
-          this value multiple times with the same value so only increment
-          if the ToolSetter has moved back the counter before the pallet 
-          change then the machine may have alarmed out and we need to 
-          still add to the running total.
-          */
-         if(((nTool1)<objTool1.Value) || ((nTool1-2)===objTool1.Value))
-         {
-           config.tools[0].RunningTotal+=2; 
-         }
-
-         /*
-         If previous value was 2 less than current value then increment RunningTotal
-         */
-          if((nTool1-2)===objTool1.Value)
-          {
-            config.tools[0].RunningTotal+=2; 
-          }
+          if we have not already done so. 
           
-        }
-        config.tools[0].Value=nTool1;  // Current value of Common Variable
-        // Tool Change?
-        if((nTool1===2)&&(config.tools[0].Count!==0))
-        {
-            // Publish ToolChange
-            let msg = {
-              ToolTrackerKey: 1,
-              Count: nTool1,
-              TransDate: transDate
-            };
-            let msgString = JSON.stringify(msg);
-            common.log(`ToolChange publish => ${msgString}`);
-            mqttClient.publish('ToolChange', msgString);
-          }else{
-            common.log(`No ToolChange`);
-          }
-          config.tools[0].Count = nTool1;  
-          common.log(`new config.tools[0].Count=>${config.tools[0].Count}`);
+          Depending on when in the CNC cycle the toolsetter performs
+          the toolchange this value could be 0 or IncrementBy.
+          This code should work for cases where IncrementBy is less than 10.
 
-        var tool2 = tool1+10;
-        var sTool2 = msg.slice(tool2, tool2+10);
-        var nTool2 = Number(sTool2); // returns NaN
-        if (Number.isNaN(nTool2)) {
-          throw new Error("Tool2 isNAN");
+          PublishedToolChange is initialized to 1 so when the program 
+          first starts we will not see this condition as tool change if
+          the common variable happens to be less than 10.
+          */
+          if (rTool1.PublishedToolChange === 0) {
+            /*
+            	ToolTrackerKey int(11) NOT NULL,
+              Count int NOT NULL,
+              TransDate datetime NOT NULL,
+            */
+
+            let tcMsg = {
+              ToolTrackerKey: rTool1.ToolTrackerKey,
+              Count: rTool1.RunningTotal,
+              TransDate: transDate,
+            };
+
+            let tcMsgString = JSON.stringify(tcMsg);
+            common.log(`Publish to ToolChange => ${tcMsgString}`);
+            mqttClient.publish("ToolChange", tcMsgString);
+            rTool1.PublishedToolChange = 1;
+          }
         } else {
-          common.log(`Tool2 ${sTool2} IS a number`);
+          // The counter is above 10 so we should have already published
+          // any previous tool change if needed; so the next time the
+          // counter gets set back to less than 10 a new tool change
+          // probably occurred and we need to Publish it.
+          rTool1.PublishedToolChange = 0;
         }
-        var tool3 = tool2+10;
-        var sTool3 = msg.slice(tool3, tool3+10);
-        var nTool3 = Number(sTool3); // returns NaN
-        if (Number.isNaN(nTool3)) {
-          throw new Error("Tool3 isNAN");
-        } else {
-          common.log(`Tool3 ${sTool3} IS a number`);
+
+        if ((nTool1 - rTool1.IncrementBy) > rTool1.Value)
+        {
+          // program may have just started so we need to initialize
+          // the running total with this value.
+          rTool1.RunningTotal = nTool1;
         }
-        var tool4 = tool3+10;
-        var sTool4 = msg.slice(tool4, tool4+10);
-        var nTool4 = Number(sTool4); // returns NaN
-        if (Number.isNaN(nTool4)) {
-          throw new Error("Tool4 isNAN");
-        } else {
-          common.log(`Tool4 ${sTool4} IS a number`);
+        else if(
+          // Counter was set to 0 and tool was changed 
+          // or Counter was rolled back because the tool was still OK. 
+          (nTool1 < rTool1.Value) ||  
+          // Normal GCode incrementBy for 1 cycle
+          ((nTool1 - rTool1.IncrementBy) === rTool1.Value) 
+        ) 
+        {
+          config.tools[iTool1].RunningTotal += rTool1.IncrementBy;
         }
-        var tool5 = tool4+10;
-        var sTool5 = msg.slice(tool5, tool5+10);
-        var nTool5 = Number(sTool5); // returns NaN
-        if (Number.isNaN(nTool5)) {
-          throw new Error("Tool5 isNAN");
-        } else {
-          common.log(`Tool5 ${sTool5} IS a number`);
+        else if ((nTool1 === rTool1.Value)) {
+          // Since the GCode subroutine gets called every pallet change
+          // we will receive the same value multiple times.
+          // Do nothing in this case.
         }
-        var tool6 = tool5+10;
-        var sTool6 = msg.slice(tool6, tool6+10);
-        var nTool6 = Number(sTool6); // returns NaN
-        if (Number.isNaN(nTool6)) {
-          throw new Error("Tool6 isNAN");
-        } else {
-          common.log(`Tool6 ${sTool6} IS a number`);
-        }
-        var tool7 = tool6+10;
-        var sTool7 = msg.slice(tool7, tool7+10);
-        var nTool7 = Number(sTool7); // returns NaN
-        if (Number.isNaN(nTool7)) {
-          throw new Error("Tool7 isNAN");
-        } else {
-          common.log(`Tool7 ${sTool7} IS a number`);
-        }
-        var tool8 = tool7+10;
-        var sTool8 = msg.slice(tool8, tool8+10);
-        var nTool8 = Number(sTool8); // returns NaN
-        if (Number.isNaN(nTool8)) {
-          throw new Error("Tool8 isNAN");
-        } else {
-          common.log(`Tool8 ${sTool8} IS a number`);
-        }
-      }
-      else
-      {
+        common.log(`rTool1.RunningTotal=${rTool1.RunningTotal}`);
+        // Update Value with current Common Variable value just recieved
+        rTool1.Value = nTool1; 
+        common.log(`rTool1.Value=${rTool1.Value}`);
+
+      } else {
         nextLine = 1;
         let startCharLine2 = msg.indexOf(":", 0);
-        startCharLine2=startCharLine2+1;
-  
-        var tool9 = startCharLine2;
-        var sTool9 = msg.slice(tool9, tool9+10);
-        var nTool9 = Number(sTool9); // returns NaN
-        if (Number.isNaN(nTool9)) {
-          throw new Error("Tool9 isNAN");
-        } else {
-          common.log(`Tool9 ${sTool9} IS a number`);
-        }
-        var tool10 = tool9+10;
-        var sTool10 = msg.slice(tool10, tool10+10);
-        var nTool10 = Number(sTool10); // returns NaN
-        if (Number.isNaN(nTool10)) {
-          throw new Error("Tool10 isNAN");
-        } else {
-          common.log(`Tool10 ${sTool10} IS a number`);
-        }
-        var tool11 = tool10+10;
-        var sTool11 = msg.slice(tool11, tool11+10);
-        var nTool11 = Number(sTool11); // returns NaN
-        if (Number.isNaN(nTool11)) {
-          throw new Error("Tool11 isNAN");
-        } else {
-          common.log(`Tool11 ${sTool11} IS a number`);
-        }
-        var tool12 = tool11+10;
-        var sTool12 = msg.slice(tool12, tool12+10);
-        var nTool12 = Number(sTool12); // returns NaN
-        if (Number.isNaN(nTool12)) {
-          throw new Error("Tool12 isNAN");
-        } else {
-          common.log(`Tool12 ${sTool12} IS a number`);
-        }
-
-      }  
-
-
+        startCharLine2 = startCharLine2 + 1;
+        common.log(`Processed line 2`);
+        // Since every item we are sending has a fixed length of 10
+        // And we always send the CNC and OriginalProcessID and the
+        // datagrams will only pass 10 of these fixed length units
+        // at a time this buffer we call Line 2 should start with
+        // tool9's value.
+        // var tool9 = startCharLine2;
+      }
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
-      // 
+      //
     }
   });
 
@@ -266,11 +231,6 @@ async function main() {
     var family = address.family;
     var ipaddr = address.address;
     common.log(`UDP Server is listening`);
-    common.log(`UDP13319.2 ->config.tools=>${config.tools}`);
-    common.log(`UDP13319.2 ->config.tools[0]=>${config.tools[0]}`);
-    common.log(`UDP13319.2 ->config.tools[0].Count=>${config.tools[0].Count}`);
-
-
   });
 
   //emits after the socket is closed using socket.close();
