@@ -8,15 +8,15 @@ const { exit } = require("process");
 const { start } = require("repl");
 const util = require("./ProcessToolCounters");
 
-//var { MQTT_SERVER, UDP_PORT } = process.env;
-const MQTT_SERVER = 'localhost';
-const UDP_PORT = 2222;
+var { MQTT_SERVER, UDP_PORT } = process.env;
+// const MQTT_SERVER = 'localhost';
+// const UDP_PORT = 2222;
 var nextLine = 1;
 // --------------------creating a udp server --------------------
 
 
 async function main() {
-//  const mqttClient = mqtt.connect(`mqtt://${MQTT_SERVER}`);
+  const mqttClient = mqtt.connect(`mqtt://${MQTT_SERVER}`);
 
   // creating a udp server
   var server = udp.createSocket("udp4");
@@ -114,6 +114,7 @@ async function main() {
         // Only publish if value has changed.
         if(nPartCounter!==config.nodes[iNode].value)
         {
+          // ALERT: This code may not scale weill.
           let kepMsg = {
             updateId: config.nodes[iNode].updateId,
             nodeId: config.nodes[iNode].nodeId,
@@ -129,11 +130,10 @@ async function main() {
 
           let kepMsgString = JSON.stringify(kepMsg);
           console.log(`Kep13319 publish => ${kepMsgString}`);
-//          mqttClient.publish("Kep13319", kepMsgString);
+          mqttClient.publish("Kep13319", kepMsgString);
           config.nodes[iNode].value=nPartCounter;
         }
       }
-
 
       // Returns an index of the 1st tool for this CNC/OriginalProcessID combination
       let iToolList = config.ToolList.findIndex((el) => {
@@ -149,10 +149,10 @@ async function main() {
       var propName = nDatagram;
       var dg = "dg" + propName.toString();
       console.log(`dg=${dg}`);
-      console.log(config.ToolList[0].ToolTracker.dg1[0].OpDescription);
-      console.log(config.ToolList[0].ToolTracker[dg][0].OpDescription);
+      var toolTrackerDatagram=config.ToolList[iToolList].ToolTracker[dg];
+      console.log(toolTrackerDatagram[0].OpDescription);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);
-      util.ProcessToolCounters("CHANGE TO MQTT CLIENT",config.ToolList[iToolList].ToolTracker[dg],msgToolCounters);
+      util.ProcessToolCounters(mqttClient,toolTrackerDatagram,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {
