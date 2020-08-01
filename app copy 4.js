@@ -83,34 +83,35 @@ async function main() {
         console.log(`CNC = ${sCNC}`);
       }
 
-      var datagramId = comma + 1;
-      var sDatagramId = msg.slice(datagramId, datagramId+2).toString().trim(); 
+      var datagram = comma + 1;
+      var sDatagram = msg.slice(datagram, datagram+2).toString().trim(); 
       // Each datagram from Moxa should contain 10, 10 byte blocks.
-      var nDatagramId = Number(sDatagramId); // returns NaN
-      if (Number.isNaN(nDatagramId)) {
-        throw new Error("Abort: sDatagramId isNAN");
+      var nDatagram = Number(sDatagram); // returns NaN
+      if (Number.isNaN(nDatagram)) {
+        throw new Error("Abort: sDatagram isNAN");
       } else {
-        console.log(`Datagram Id#: ${sDatagramId}`);
+        console.log(`Datagram #: ${sDatagram}`);
       }
 
-      var toolListKey = datagramId + 2;
-      var sToolListKey = msg.slice(toolListKey, toolListKey + 10).toString().trim();
-      var nToolListKey = Number(sToolListKey); // returns NaN
-      if (Number.isNaN(nToolListKey)) {
-        throw new Error("Abort: ToolListKey isNAN");
+      var originalProcessID = datagram + 2;
+      var sOriginalProcessID = msg.slice(originalProcessID, originalProcessID + 10).toString().trim();
+      var nOriginalProcessID = Number(sOriginalProcessID); // returns NaN
+      if (Number.isNaN(nOriginalProcessID)) {
+        throw new Error("Abort: OriginalProcessID isNAN");
       } else {
-        console.log(`ToolListKey=${sToolListKey}`);
+        console.log(`OriginalProcessID=${sOriginalProcessID}`);
         // 
       }
 
-      var startToolCounters = toolListKey + 10;  // Priming read
+      var startToolCounters = originalProcessID + 10;  // Priming read
+      // let nOriginalProcessID = 49396; // Replace this line with the code above.
       // The part counter is always in the 1st 10 byte block after the
-      // ToolListKey in datagram #1 only. 
-      if(nDatagramId===1) 
+      // OriginalProcessID in datagram #1. 
+      if(nDatagram===1) 
       {
         startToolCounters += 10;
-        // TODO: Change this line to ToolListKey + 10 after adding code above
-        var partCounter = toolListKey + 10;
+        // TODO: Change this line to originalProcessID + 10 after adding code above
+        var partCounter = originalProcessID + 10;
         var sPartCounter = msg.slice(partCounter, partCounter + 10).toString().trim();
         var nPartCounter = Number(sPartCounter); // returns NaN
         if (Number.isNaN(nPartCounter)) {
@@ -121,24 +122,12 @@ async function main() {
         }
         //  looks through each element and stops at first match.
         // Make sure first match is the part counter node.
-        let iNode = config.nodes.findIndex((el) => {
-          if (
-            el.cnc === sCNC &&
-            el.ToolListKey === nToolListKey
-          ) {
-            return true;
-          } else {
-            return false;
-          }
-        });
- 
-        console.log(`sCNC=${sCNC},nToolListKey = ${nToolListKey}, iNode = ${iNode}`)
+        let iNode = config.nodes.findIndex((el) => el.cnc === sCNC); 
+        console.log(`sCNC=${sCNC},iNode = ${iNode}`)
         // Only publish if value has changed.
         if(nPartCounter!==config.nodes[iNode].value)
         {
-          // ALERT: This code may not scale well.
-          // Can we initialize this info from a database instead of the config
-          // file?
+          // ALERT: This code may not scale weill.
           let kepMsg = {
             updateId: config.nodes[iNode].updateId,
             nodeId: config.nodes[iNode].nodeId,
@@ -159,23 +148,24 @@ async function main() {
         }
       }
 
-      // Returns an index of the 1st tool for this CNC/ToolListKey combination
+      // Returns an index of the 1st tool for this CNC/OriginalProcessID combination
       let iToolList = config.ToolList.findIndex((el) => {
         if (
           el.CNC === nCNC &&
-          el.ToolListKey === nToolListKey
+          el.OriginalProcessID === nOriginalProcessID
         ) {
           return true;
         } else {
           return false;
         }
       });
-      var dg = "dg" + sDatagramId.toString();
+      var propName = nDatagram;
+      var dg = "dg" + propName.toString();
       console.log(`dg=${dg}`);
-      var Datagram=config.ToolList[iToolList].Datagram[dg];
-      console.log(Datagram[0].OpDescription);
+      var toolTrackerDatagram=config.ToolList[iToolList].ToolTracker[dg];
+      console.log(toolTrackerDatagram[0].OpDescription);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);
-      util.ProcessToolCounters(mqttClient,transDate,nCNC,Datagram,msgToolCounters);
+      util.ProcessToolCounters(mqttClient,toolTrackerDatagram,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {
