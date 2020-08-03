@@ -104,61 +104,7 @@ async function main() {
       }
 
       var startToolCounters = toolListKey + 10;  // Priming read
-      // The part counter is always in the 1st 10 byte block after the
-      // ToolListKey in datagram #1 only. 
-      if(nDatagramId===1) 
-      {
-        startToolCounters += 10;
-        // TODO: Change this line to ToolListKey + 10 after adding code above
-        var partCounter = toolListKey + 10;
-        var sPartCounter = msg.slice(partCounter, partCounter + 10).toString().trim();
-        var nPartCounter = Number(sPartCounter); // returns NaN
-        if (Number.isNaN(nPartCounter)) {
-          throw new Error("Abort: PartCounter isNAN");
-        } else {
-          console.log(`PartCounter=${sPartCounter}`);
-          //
-        }
-        //  looks through each element and stops at first match.
-        // Make sure first match is the part counter node.
-        let iNode = config.nodes.findIndex((el) => {
-          if (
-            el.cnc === sCNC &&
-            el.ToolListKey === nToolListKey
-          ) {
-            return true;
-          } else {
-            return false;
-          }
-        });
  
-        console.log(`sCNC=${sCNC},nToolListKey = ${nToolListKey}, iNode = ${iNode}`)
-        // Only publish if value has changed.
-        if(nPartCounter!==config.nodes[iNode].value)
-        {
-          // ALERT: This code may not scale well.
-          // Can we initialize this info from a database instead of the config
-          // file?
-          let kepMsg = {
-            updateId: config.nodes[iNode].updateId,
-            nodeId: config.nodes[iNode].nodeId,
-            name: config.nodes[iNode].name,
-            plexus_Customer_No: config.nodes[iNode].plexus_Customer_No,
-            pcn: config.nodes[iNode].pcn,
-            workcenter_Key: config.nodes[iNode].workcenter_Key,
-            workcenter_Code: config.nodes[iNode].workcenter_Code,
-            cnc: config.nodes[iNode].cnc,
-            value: nPartCounter,
-            transDate: transDate,
-          };
-
-          let kepMsgString = JSON.stringify(kepMsg);
-          console.log(`Kep13319 publish => ${kepMsgString}`);
-          mqttClient.publish("Kep13319", kepMsgString);
-          config.nodes[iNode].value=nPartCounter;
-        }
-      }
-
       // Returns an index of the 1st tool for this CNC/ToolListKey combination
       let iToolList = config.ToolList.findIndex((el) => {
         if (
