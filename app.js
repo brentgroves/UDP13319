@@ -107,10 +107,7 @@ async function main() {
  
       // Returns an index of the 1st tool for this CNC/ToolListKey combination
       let iToolList = config.ToolList.findIndex((el) => {
-        if (
-          el.CNC === nCNC &&
-          el.ToolListKey === nToolListKey
-        ) {
+        if (el.ToolListKey === nToolListKey) {
           return true;
         } else {
           return false;
@@ -118,10 +115,10 @@ async function main() {
       });
       var dg = "dg" + sDatagramId.toString();
       console.log(`dg=${dg}`);
-      var Datagram=config.ToolList[iToolList].Datagram[dg];
-      console.log(Datagram[0].OpDescription);
+      var datagram=config.ToolList[iToolList].Datagram[dg];
+      console.log(datagram[0].IncrementBy);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);
-      util.ProcessToolCounters(mqttClient,transDate,nCNC,Datagram,msgToolCounters);
+      util.ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {

@@ -14,7 +14,7 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
     if (Number.isNaN(counter)) {
       throw new Error(`"Abort in priming read the 1st counter in datagram isNAN`);
     } else {
-      console.log(`ToolTrackerKey: ${datagram[0].ToolTrackerKey} = ${sCounter}`);
+      console.log(`ToolListItemKey: ${datagram[0].ToolListItemKey}, Counter = ${sCounter}`);
     }
 
     for (var rTool of datagram) 
