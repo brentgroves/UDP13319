@@ -3,7 +3,7 @@ var moment = require("moment");
 const common = require("@bgroves/common");
 
 
-async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg) 
+async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,datagram,msg) 
 {
   try
   {
@@ -14,14 +14,14 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
     if (Number.isNaN(counter)) {
       throw new Error(`"Abort in priming read the 1st counter in datagram isNAN`);
     } else {
-      console.log(`ToolListItemKey: ${datagram[0].ToolListItemKey}, Counter = ${sCounter}`);
+      console.log(`ToolListItemKey: ${datagram[0].AssemblyKey}, Counter = ${sCounter}`);
     }
 
-    for (var rTool of datagram) 
+    for (var rAssembly of datagram) 
     {
       var publishNow=false;
       // CodeChange: Replaced 10 with rTool.IncrementBy
-      if (counter <= rTool.IncrementBy) 
+      if (counter <= rAssembly.IncrementBy) 
       {
         /* 
         We need to record the tool change during this time period
@@ -34,7 +34,7 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
         first starts we will not see this condition as tool change if
         the common variable happens to be less than the IncrementBy value.
         */
-        if (rTool.PublishedToolChange === 0) 
+        if (rAssembly.PublishedToolChange === 0) 
         {
           publishNow=true;
         }
@@ -45,14 +45,14 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
         // any previous tool change if needed; so the next time the
         // counter gets set back to less than the IncrementBy value a new tool change
         // probably occurred and we need to Publish it.
-        rTool.PublishedToolChange = 0;
+        rAssembly.PublishedToolChange = 0;
       }
 
-      if ((counter - rTool.IncrementBy) > rTool.Value)
+      if ((counter - rAssembly.IncrementBy) > rAssembly.Current_Value)
       {
         // program may have just started so we need to initialize
         // the running total with this value.
-        rTool.RunningTotal = counter;
+        rAssembly.RunningTotal = counter;
       }
       else if(
         // Counter was set to 0 and tool was changed 
@@ -61,41 +61,61 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
         // a pallet change and before tool cut. In this case 
         // the running total should not be updated until it has
         // been published as the previous tools tool life.
-        ((counter < rTool.Value) && (counter != rTool.IncrementBy)) ||  
+        ((counter < rAssembly.Current_Value) && (counter != rAssembly.IncrementBy)) ||  
         // Normal GCode incrementBy for 1 cycle
-        ((counter - rTool.IncrementBy) === rTool.Value) 
+        ((counter - rAssembly.IncrementBy) === rAssembly.Current_Value) 
       ) 
       {
-        rTool.RunningTotal += rTool.IncrementBy;
+        rAssembly.RunningTotal += rAssembly.IncrementBy;
       }
-      else if ((counter === rTool.Value)) {
-        // Since the GCode subroutine gets called every pallet change
-        // we will receive the same value multiple times.
+      else if ((counter === rAssembly.Current_Value)) {
+        // If we will receive the same value multiple times.
+        // This should not happen if the call to ToolList.SSB is 
+        // put in the correct location.
         // Do nothing in this case.
       }
-      console.log(`rTool.RunningTotal=${rTool.RunningTotal}`);
+      console.log(`rAssembly.RunningTotal=${rAssembly.RunningTotal}`);
 
+      // Publish Tool change if necessary
       if(publishNow)
       {
         let tcMsg = {
-          ToolListItemKey: rTool.ToolListItemKey,
-          CNC: nCNC,
-          ToolLife: rTool.RunningTotal,
-          TransDate: transDate,
+          CNC_Key: nCNC_Key,
+          Part_Key: nPart_Key,
+          Assembly_Key: rAssembly.Assembly_Key,
+          Actual_Tool_Life: rAssembly.RunningTotal,
+          Trans_Date: transDate,
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
         console.log(`Published ToolChange => ${tcMsgString}`);
         mqttClient.publish("ToolChange", tcMsgString);
-        rTool.PublishedToolChange = 1;
+        rAssembly.PublishedToolChange = 1;
         // counter can be 0 or incrementBy depending on if the tool setter
         // changed the tool in mid cycle.
-        rTool.RunningTotal=counter;  
+        rAssembly.RunningTotal=counter;  
         publishNow = false;
       }
+
+      // Publish CounterUpdate if necessary
+      if (counter !== rAssembly.Current_Value) {
+        let tcMsg = {
+          CNC_Key: nCNC_Key,
+          Part_Key: nPart_Key,
+          Assembly_Key: rAssembly.Assembly_Key,
+          Current_Value: counter,
+          Trans_Date: transDate,
+        };
+
+        let tcMsgString = JSON.stringify(tcMsg);
+        console.log(`Published CounterUpdate => ${tcMsgString}`);
+        mqttClient.publish("CounterUpdate", tcMsgString);
+
+      }      
+
       // Update Value with current Common Variable value just recieved
-      rTool.Value = counter; 
-      console.log(`updated rTool.Value=${rTool.Value}`);
+      rAssembly.Current_Value = counter; 
+      console.log(`updated rAssembly.Current_Value=${rAssembly.Current_Value}`);
       // increment msg pointer 
       if((i + 10) <= msg.length)
       {
@@ -109,7 +129,7 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msg)
   } finally {
     //
   }
-};
+}
 
 module.exports = {
   ProcessToolCounters

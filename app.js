@@ -51,41 +51,36 @@ async function main() {
       }  // If there are multiple datagrams sent with 1 write only the
       // 1st one will have DC2.  If there is more than one write() in the
       // GCode because we are transferring more than 160 characters.  There
-      // may be another DC2 character on subsequent datagrams.  This has
-      // not been tested.
+      // will be another DC2 character on subsequent datagrams.  
 
       /*
       COM DATA FORMAT: DC2 - AT MOST 160 BYTES OF DATA - '%' - DC4.
-      UDP DATAGRAM FORMAT: 
-      1ST POSSIBILITY
-      DC2 + 10 10-BYTE BLOCKS
-      '%' ALONE THEN DC4 ALONE, OR '%' + DC4 TOGETHER
-      2ND POSSIBILITY
-      DC2 ALONE
-      10 10-BYTE BLOCKS
-      '%' ALONE THEN DC4 ALONE, OR '%' + DC4 TOGETHER
+      UDP DATAGRAM MESSAGE FORMAT: 
+      1ST Message options:
+      1. DC2 ALONE
+      2. DC2 + 10 10-BYTE BLOCKS
+      2nd Message options:
+      1. 10 10-BYTE BLOCKS + %
+      2. 10 10-BYTE BLOCKS
+      3rd Message options:
+      1. '%' ALONE 
+      2. DC4 ALONE
+      3. '%' + DC4 TOGETHER
+      4th Message options:
+      1. DC4 ALONE
+      2. NOTHING
       */
 
       // I am only recieving 7 of the first 10 bytes being sent on
-      // the second datagram; maybe this is because of the 3 control
+      // the second datagram message; maybe this is because of the 3 control
       // characters being sent: DC2,DC4, and %.  
-      // Since the first 10-byte block is the header we can 
-      // include a character such as a comma to parse it instead
-      // of relying on a fixed 10 byte format to retrieve the 
-      // 3 peices of information it contains.
+      // Since the first 10-byte block is a header that contains the 
+      // datagram number and it will only be 2 bytes long so we can preceed 
+      // it with a comma to determine its starting position since we can not
+      // rely on recieving all 10 bytes of the 1st 10-byte block sent.
       
       let comma = msg.indexOf(",", startChar);
-      var sCNC = msg.slice(startChar, comma).toString().trim();
-      var nCNC = Number(sCNC); // returns NaN
-      if (Number.isNaN(nCNC)) {
-        throw new Error("Abort: sCNC isNAN");
-      } else {
-        console.log(`CNC = ${sCNC}`);
-      }
-
-      var datagramId = comma + 1;
-      var sDatagramId = msg.slice(datagramId, datagramId+2).toString().trim(); 
-      // Each datagram from Moxa should contain 10, 10 byte blocks.
+      var sDatagramId = msg.slice(comma, comma+2).toString().trim();
       var nDatagramId = Number(sDatagramId); // returns NaN
       if (Number.isNaN(nDatagramId)) {
         throw new Error("Abort: sDatagramId isNAN");
@@ -93,21 +88,30 @@ async function main() {
         console.log(`Datagram Id#: ${sDatagramId}`);
       }
 
-      var toolListKey = datagramId + 2;
-      var sToolListKey = msg.slice(toolListKey, toolListKey + 10).toString().trim();
-      var nToolListKey = Number(sToolListKey); // returns NaN
-      if (Number.isNaN(nToolListKey)) {
-        throw new Error("Abort: ToolListKey isNAN");
+      // All of the remaining data sent is contained in a fixed length 10-byte format
+      let CNC_Key = comma+2;
+      var sCNC_key = msg.slice(CNC_Key, CNC_Key + 10).toString().trim();
+      var nCNC_Key = Number(sCNC_key); // returns NaN
+      if (Number.isNaN(nCNC_Key)) {
+        throw new Error("Abort: sCNC_Key isNAN");
       } else {
-        console.log(`ToolListKey=${sToolListKey}`);
-        // 
+        console.log(`CNC_Key = ${sCNC_key}`);
       }
 
-      var startToolCounters = toolListKey + 10;  // Priming read
+      let Part_Key = CNC_Key + 10;
+      var sPart_key = msg.slice(Part_Key, Part_Key + 10).toString().trim();
+      var nPart_Key = Number(sPart_key); // returns NaN
+      if (Number.isNaN(nPart_Key)) {
+        throw new Error("Abort: sPart_Key isNAN");
+      } else {
+        console.log(`Part_Key = ${sPart_key}`);
+      }
+
+      var startToolCounters = Part_Key + 10;  // Priming read
  
       // Returns an index of the 1st tool for this CNC/ToolListKey combination
-      let iToolList = config.ToolList.findIndex((el) => {
-        if (el.ToolListKey === nToolListKey) {
+      let iAssembly = config.Part.findIndex((el) => {
+        if (el.Part_Key === nPart_Key) {
           return true;
         } else {
           return false;
@@ -115,10 +119,10 @@ async function main() {
       });
       var dg = "dg" + sDatagramId.toString();
       console.log(`dg=${dg}`);
-      var datagram=config.ToolList[iToolList].Datagram[dg];
+      var datagram=config.Part[iAssembly].Datagram[dg];
       console.log(datagram[0].IncrementBy);
-      var msgToolCounters = msg.slice(startToolCounters,msg.length);
-      util.ProcessToolCounters(mqttClient,transDate,nCNC,datagram,msgToolCounters);
+      var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
+      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,datagram,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {
