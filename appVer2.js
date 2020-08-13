@@ -121,12 +121,10 @@ async function main() {
       {
         throw new Error(`Abort: Can't find Part_Key: ${nPart_Key},config.Part=${config.Part}`);
       }
-      var dg = "dg" + sDatagramId.toString();
-      console.log(`dg=${dg}`);
-      var datagram=config.Part[iAssembly].Assembly[dg];
-      console.log(datagram[0].IncrementBy);
+      var oPart=config.Part[iAssembly];
+      console.log(`Part_Key = ${oPart.Part_Key}`);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
-      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,datagram,msgToolCounters);
+      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {
