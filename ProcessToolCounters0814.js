@@ -3,28 +3,25 @@ var moment = require("moment");
 const common = require("@bgroves/common");
 
 
-async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,idxStart,idxEnd,msg) 
+async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,datagram,msg) 
 {
   try
   {
-
     // priming read for loop
-    var iMsg = 0; 
-    var sCounter = msg.slice(iMsg, iMsg + 10).toString().trim();
+    var i = 0; 
+    var sCounter = msg.slice(i, i + 10).toString().trim();
     var counter = Number(sCounter); // returns NaN
     if (Number.isNaN(counter)) {
       throw new Error(`"Abort in priming read the 1st counter in datagram isNAN`);
     } else {
-      console.log(`oPart.Assembly_Key: ${oPart.Assembly_Key[idxStart]}, Counter = ${sCounter}`);
+      console.log(`Assembly_Key: ${datagram[0].Assembly_Key}, Counter = ${sCounter}`);
     }
 
-
-    var i;
-    for (i = idxStart; i < idxEnd; i++) 
+    for (var rAssembly of datagram) 
     {
       var publishNow=false;
       // CodeChange: Replaced 10 with rTool.IncrementBy
-      if (counter <= oPart.IncrementBy[i]) 
+      if (counter <= rAssembly.IncrementBy) 
       {
         /* 
         We need to record the tool change during this time period
@@ -35,9 +32,9 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
 
         PublishedToolChange is initialized to 1 so when the program 
         first starts we will not see this condition as tool change if
-        the common variable happens to be less than or equal to the IncrementBy value.
+        the common variable happens to be less than the IncrementBy value.
         */
-        if (oPart.PublishedToolChange[i] === 0) 
+        if (rAssembly.PublishedToolChange === 0) 
         {
           publishNow=true;
         }
@@ -48,15 +45,14 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
         // any previous tool change if needed; so the next time the
         // counter gets set back to less than the IncrementBy value a new tool change
         // probably occurred and we need to Publish it.
-        oPart.PublishedToolChange[i] = 0;
+        rAssembly.PublishedToolChange = 0;
       }
 
-      if ((counter - oPart.IncrementBy[i]) > oPart.Current_Value[i])
+      if ((counter - rAssembly.IncrementBy) > rAssembly.Current_Value)
       {
         // program may have just started so we need to initialize
-        // the running total with this value.  Current_Value and RunningTotals 
-        // are initialized to 0' so if counter is 0 nothing will change.
-        oPart.RunningTotal[i] = counter;
+        // the running total with this value.
+        rAssembly.RunningTotal = counter;
       }
       else if(
         // Counter was set to 0 and tool was changed 
@@ -65,20 +61,20 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
         // a pallet change and before tool cut. In this case 
         // the running total should not be updated until it has
         // been published as the previous tools tool life.
-        ((counter < oPart.Current_Value[i]) && (counter != oPart.IncrementBy[i])) ||  
+        ((counter < rAssembly.Current_Value) && (counter != rAssembly.IncrementBy)) ||  
         // Normal GCode incrementBy for 1 cycle
-        ((counter - oPart.IncrementBy[i]) === oPart.Current_Value[i]) 
+        ((counter - rAssembly.IncrementBy) === rAssembly.Current_Value) 
       ) 
       {
-        oPart.RunningTotal[i] += oPart.IncrementBy[i];
+        rAssembly.RunningTotal += rAssembly.IncrementBy;
       }
-      else if ((counter === oPart.Current_Value[i])) {
+      else if ((counter === rAssembly.Current_Value)) {
         // If we will receive the same value multiple times.
-        // This should not happen if the call to Tracker.SSB is 
+        // This should not happen if the call to ToolList.SSB is 
         // put in the correct location.
         // Do nothing in this case.
       }
-      console.log(`oPart.RunningTotal[]=${oPart.RunningTotal[i]}`);
+      console.log(`rAssembly.RunningTotal=${rAssembly.RunningTotal}`);
 
       // Publish Tool change if necessary
       if(publishNow)
@@ -86,27 +82,27 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
         let tcMsg = {
           CNC_Key: nCNC_Key,
           Part_Key: nPart_Key,
-          Assembly_Key: oPart.Assembly_Key[i],
-          Actual_Tool_Life: oPart.RunningTotal[i],
+          Assembly_Key: rAssembly.Assembly_Key,
+          Actual_Tool_Life: rAssembly.RunningTotal,
           Trans_Date: transDate,
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
         console.log(`Published ToolChange => ${tcMsgString}`);
         mqttClient.publish("ToolChange", tcMsgString);
-        oPart.PublishedToolChange[i] = 1;
+        rAssembly.PublishedToolChange = 1;
         // counter can be 0 or incrementBy depending on if the tool setter
         // changed the tool in mid cycle.
-        oPart.RunningTotal=counter;  
+        rAssembly.RunningTotal=counter;  
         publishNow = false;
       }
 
       // Publish CounterUpdate if necessary
-      if (counter !== oPart.Current_Value[i]) {
+      if (counter !== rAssembly.Current_Value) {
         let tcMsg = {
           CNC_Key: nCNC_Key,
           Part_Key: nPart_Key,
-          Assembly_Key: oPart.Assembly_Key[i],
+          Assembly_Key: rAssembly.Assembly_Key,
           Current_Value: counter,
           Trans_Date: transDate,
         };
@@ -118,13 +114,13 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
       }      
 
       // Update Value with current Common Variable value just recieved
-      oPart.Current_Value[i] = counter; 
-      console.log(`updated oPart.Current_Value[]=${oPart.Current_Value[i]}`);
+      rAssembly.Current_Value = counter; 
+      console.log(`updated rAssembly.Current_Value=${rAssembly.Current_Value}`);
       // increment msg pointer 
-      if((iMsg + 10) <= msg.length)
+      if((i + 10) <= msg.length)
       {
-        iMsg += 10; 
-        sCounter = msg.slice(iMsg, iMsg + 10).toString().trim();
+        i += 10; 
+        sCounter = msg.slice(i, i + 10).toString().trim();
         counter = Number(sCounter); // returns NaN
       }
     }

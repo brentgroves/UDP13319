@@ -110,23 +110,44 @@ async function main() {
       var startToolCounters = Part_Key + 10;  // Priming read
  
       // Returns an index of the 1st tool for this CNC/ToolListKey combination
-      let iAssembly = config.Part.findIndex((el) => {
+      let iPart = config.Part.findIndex((el) => {
         if (el.Part_Key === nPart_Key) {
           return true;
         } else {
           return false;
         }
       });
-      if (-1===iAssembly)
+      if (-1===iPart)
       {
         throw new Error(`Abort: Can't find Part_Key: ${nPart_Key},config.Part=${config.Part}`);
       }
-      var dg = "dg" + sDatagramId.toString();
-      console.log(`dg=${dg}`);
-      var datagram=config.Part[iAssembly].Assembly[dg];
-      console.log(datagram[0].IncrementBy);
+      var oPart=config.Part[iPart];
+      console.log(`Part_Key = ${oPart.Part_Key}`);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
-      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,datagram,msgToolCounters);
+
+      // Determine starting point in assembly_key array.
+      var idxStart = 0;
+      var idxEnd = 0;
+      switch(nDatagramId) {
+        case 1:
+          idxStart=0;
+          idxEnd=7;
+          break;
+        case 2:
+          idxStart=7;
+          idxEnd=10;
+          break;
+        case 3:
+          idxStart=10;
+          idxEnd=12;
+          break;
+        default:
+        // code block
+      }
+      console.log(`idxStart: ${idxStart},idxEnd: ${idxEnd}`);
+
+
+      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,idxStart,idxEnd,msgToolCounters);
     } catch (e) {
       console.log(`caught exception! ${e}`);
     } finally {
