@@ -112,8 +112,8 @@ async function ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        console.log(`Published CounterUpdate => ${tcMsgString}`);
-        mqttClient.publish("CounterUpdate", tcMsgString);
+        console.log(`Published UpdateTrackerCurrentValue => ${tcMsgString}`);
+        mqttClient.publish("UpdateTrackerCurrentValue", tcMsgString);
 
       }      
 

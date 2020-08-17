@@ -23,30 +23,30 @@ async function main() {
 
   // emits when any error occurs
   server.on("error", function (error) {
-    console.log("Error: " + error);
+    common.log("Error: " + error);
     server.close();
   });
 
   // emits on new datagram msg
   server.on("message", function (msg, info) {
     try {
-      console.log("Data received from client : " + msg.toString());
-      console.log(`Data received in hex =>${msg.toString("hex")}`);
-      console.log("Received %d bytes", msg.length);
+      common.log("Data received from client : " + msg.toString());
+      common.log(`Data received in hex =>${msg.toString("hex")}`);
+      common.log("Received %d bytes", msg.length);
       // We recieve DC2,%,DC4 in datagrams by themself but receive all the common variable in one datagram.
       if (msg.length < 3) {
-        console.log(`Abort: msg.length<3`);
+        common.log(`Abort: msg.length<3`);
         return;
       }
 
       const transDate = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-      console.log(`ToolChange transDate=>${transDate}`);
+      common.log(`UDP13319 transDate=>${transDate}`);
 
       // We receive up to 10 fixed length records in one datagram.  If we have more than 10 fixed length units
       // that are being sent then we will receive them in multiple datagrams.
       let startChar = 0;
       if (0x12 == msg[0]) {
-        console.log(`Increment startChar: 0x12==msg[0]`);
+        common.log(`Increment startChar: 0x12==msg[0]`);
         startChar++; // sometimes DC2 will arrive with line #1 and sometimes it is in a datagram by itself.
       }  // If there are multiple datagrams sent with 1 write only the
       // 1st one will have DC2.  If there is more than one write() in the
@@ -85,7 +85,7 @@ async function main() {
       if (Number.isNaN(nDatagramId)) {
         throw new Error("Abort: sDatagramId isNAN");
       } else {
-        console.log(`Datagram Id#: ${sDatagramId}`);
+        common.log(`Datagram Id#: ${sDatagramId}`);
       }
 
       // All of the remaining data sent is contained in a fixed length 10-byte format
@@ -95,7 +95,7 @@ async function main() {
       if (Number.isNaN(nCNC_Key)) {
         throw new Error("Abort: sCNC_Key isNAN");
       } else {
-        console.log(`CNC_Key = ${sCNC_key}`);
+        common.log(`CNC_Key = ${sCNC_key}`);
       }
 
       let Part_Key = CNC_Key + 10;
@@ -104,7 +104,7 @@ async function main() {
       if (Number.isNaN(nPart_Key)) {
         throw new Error("Abort: sPart_Key isNAN");
       } else {
-        console.log(`Part_Key = ${sPart_key}`);
+        common.log(`Part_Key = ${sPart_key}`);
       }
 
       var startToolCounters = Part_Key + 10;  // Priming read
@@ -122,7 +122,7 @@ async function main() {
         throw new Error(`Abort: Can't find Part_Key: ${nPart_Key},config.Part=${config.Part}`);
       }
       var oPart=config.Part[iPart];
-      console.log(`Part_Key = ${oPart.Part_Key}`);
+      common.log(`Part_Key = ${oPart.Part_Key}`);
       var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
 
       // Determine starting point in assembly_key array.
@@ -144,12 +144,12 @@ async function main() {
         default:
         // code block
       }
-      console.log(`idxStart: ${idxStart},idxEnd: ${idxEnd}`);
+      common.log(`idxStart: ${idxStart},idxEnd: ${idxEnd}`);
 
 
       util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,idxStart,idxEnd,msgToolCounters);
     } catch (e) {
-      console.log(`caught exception! ${e}`);
+      common.log(`caught exception! ${e}`);
     } finally {
       //
     }
@@ -161,12 +161,12 @@ async function main() {
     var port = address.port;
     var family = address.family;
     var ipaddr = address.address;
-    console.log(`UDP Server is listening`);
+    common.log(`UDP Server is listening`);
   });
 
   //emits after the socket is closed using socket.close();
   server.on("close", function () {
-    console.log("Socket is closed !");
+    common.log("Socket is closed !");
   });
   server.bind(UDP_PORT);
 }
