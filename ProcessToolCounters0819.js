@@ -1,81 +1,12 @@
 // https://node.readthedocs.io/en/latest/api/dgram/
+var moment = require("moment");
 const common = require("@bgroves/common");
-const mariadb = require("mariadb");
-
-/*
-const {
-  MQTT_SERVER,
-  MQTT_PORT,
-  MYSQL_HOSTNAME,
-  MYSQL_PORT,
-  MYSQL_USERNAME,
-  MYSQL_PASSWORD,
-  MYSQL_DATABASE
-} = process.env;
-*/
-const MQTT_SERVER='localhost';
-const MQTT_PORT='1882';
-const MYSQL_HOSTNAME= "localhost";
-const MYSQL_PORT='3305';
-const MYSQL_USERNAME= "brent";
-const MYSQL_PASSWORD= "JesusLives1!";
-const MYSQL_DATABASE= "mach2";
-
-const connectionString = {
-  connectionLimit: 5,
-  multipleStatements: true,
-  host: MYSQL_HOSTNAME,
-  port: MYSQL_PORT,
-  user: MYSQL_USERNAME,
-  password: MYSQL_PASSWORD,
-  database: MYSQL_DATABASE
-}
-
-common.log(`user: ${MYSQL_USERNAME},password: ${MYSQL_PASSWORD}, database: ${MYSQL_DATABASE}, MYSQL_HOSTNAME: ${MYSQL_HOSTNAME}, MYSQL_PORT: ${MYSQL_PORT}`);
-
-const pool = mariadb.createPool( connectionString);
 
 
-
-var Current_Value = {};
-
-
-
-async function ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msg) 
+async function ProcessAssemblyCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,idxStart,idxEnd,msg) 
 {
   try
   {
-    // Number of full 10-byte blocks.
-    // There could be a % character at the end of message. 
-    var iEnd = Math.trunc(msg.length / 10);
-
-    // Initialize datagram, set number, and retrieve IncrementBy value
-    // if this is the first Datagram_Key received.
-    if (Current_Value[nDatagramKey] === undefined)
-    {
-        Current_Value[nDatagramKey] = {};
-        let conn;
-        try {
-          conn = await pool.getConnection();      
-          const resultSets = await conn.query('call GetIncrementBy(?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nDatagramKey]);
-          let incrementBy = resultSets[1][0].pIncrementBy;
-          let returnValue = resultSets[1][0].pReturnValue;
-          common.log(`GetIncrementBy.incrementBy=${incrementBy},returnValue=${returnValue}`);
-          Current_Value[nDatagramKey].IncrementBy = incrementBy;
-        } catch (err) {
-          // handle the error
-          console.log(`Error =>${err}`);
-        } finally {
-          if (conn) conn.release(); //release to pool
-        }
-      
-    }
-    if (Current_Value[nDatagramKey][nSetNo] === undefined)
-    {
-        Current_Value[nDatagramKey][nSetNo] = {};
-    }
-    
-
 
     // priming read for loop
     var iMsg = 0; 
@@ -84,11 +15,12 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,
     if (Number.isNaN(counter)) {
       throw new Error(`"Abort in priming read the 1st counter in datagram isNAN`);
     } else {
-      console.log(`msg=${msg}`);
+      console.log(`oPart.Assembly_Key: ${oPart.Assembly_Key[idxStart]}, Counter = ${sCounter}`);
     }
 
+
     var i;
-    for (i = 0; i < iEnd; i++) 
+    for (i = idxStart; i < idxEnd; i++) 
     {
       var publishNow=false;
       // CodeChange: Replaced 10 with rTool.IncrementBy

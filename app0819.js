@@ -80,30 +80,74 @@ async function main() {
       // rely on recieving all 10 bytes of the 1st 10-byte block sent.
       
       let comma = msg.indexOf(",", startChar);
-
-      var sDatagramKey = msg.slice(0, comma).toString().trim();
-      var nDatagramKey = Number(sDatagramKey); // returns NaN
-      if (Number.isNaN(nDatagramKey)) {
-        throw new Error("Abort: sDatagramKey isNAN");
+      var sDatagramId = msg.slice(comma+1, comma+2).toString().trim();
+      var nDatagramId = Number(sDatagramId); // returns NaN
+      if (Number.isNaN(nDatagramId)) {
+        throw new Error("Abort: sDatagramId isNAN");
       } else {
-        common.log(`Datagram Key: ${sDatagramKey}`);
-      }
-
-
-      var sSetNo = msg.slice(comma+1, comma+3).toString().trim();
-      var nSetNo = Number(sSetNo); // returns NaN
-      if (Number.isNaN(nSetNo)) {
-        throw new Error("Abort: sSetNo isNAN");
-      } else {
-        common.log(`Set No: ${sSetNo}`);
+        common.log(`Datagram Id#: ${sDatagramId}`);
       }
 
       // All of the remaining data sent is contained in a fixed length 10-byte format
-      var startAssemblyCounters = comma + 3;  // Priming read
- 
-      var msgAssemblyCounters = msg.slice(startAssemblyCounters,msg.length);  // There could be a % character at end of buffer
+      let CNC_Key = comma+2;
+      var sCNC_key = msg.slice(CNC_Key, CNC_Key + 10).toString().trim();
+      var nCNC_Key = Number(sCNC_key); // returns NaN
+      if (Number.isNaN(nCNC_Key)) {
+        throw new Error("Abort: sCNC_Key isNAN");
+      } else {
+        common.log(`CNC_Key = ${sCNC_key}`);
+      }
 
-      util.ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msgAssemblyCounters);
+      let Part_Key = CNC_Key + 10;
+      var sPart_key = msg.slice(Part_Key, Part_Key + 10).toString().trim();
+      var nPart_Key = Number(sPart_key); // returns NaN
+      if (Number.isNaN(nPart_Key)) {
+        throw new Error("Abort: sPart_Key isNAN");
+      } else {
+        common.log(`Part_Key = ${sPart_key}`);
+      }
+
+      var startToolCounters = Part_Key + 10;  // Priming read
+ 
+      // Returns an index of the 1st tool for this CNC/ToolListKey combination
+      let iPart = config.Part.findIndex((el) => {
+        if (el.Part_Key === nPart_Key) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+      if (-1===iPart)
+      {
+        throw new Error(`Abort: Can't find Part_Key: ${nPart_Key},config.Part=${config.Part}`);
+      }
+      var oPart=config.Part[iPart];
+      common.log(`Part_Key = ${oPart.Part_Key}`);
+      var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
+
+      // Determine starting point in assembly_key array.
+      var idxStart = 0;
+      var idxEnd = 0;
+      switch(nDatagramId) {
+        case 1:
+          idxStart=0;
+          idxEnd=7;
+          break;
+        case 2:
+          idxStart=7;
+          idxEnd=10;
+          break;
+        case 3:
+          idxStart=10;
+          idxEnd=12;
+          break;
+        default:
+        // code block
+      }
+      common.log(`idxStart: ${idxStart},idxEnd: ${idxEnd}`);
+
+
+      util.ProcessToolCounters(mqttClient,transDate,nCNC_Key,nPart_Key,oPart,idxStart,idxEnd,msgToolCounters);
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
