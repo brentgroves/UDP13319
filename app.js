@@ -6,7 +6,7 @@ const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
 const { exit } = require("process");
 const { start } = require("repl");
-const util = require("./ProcessToolCounters");
+const util = require("./ProcessAssemblyCounters");
 
 var { MQTT_SERVER, UDP_PORT } = process.env;
 // const MQTT_SERVER = 'localhost';
@@ -103,7 +103,7 @@ async function main() {
  
       var msgAssemblyCounters = msg.slice(startAssemblyCounters,msg.length);  // There could be a % character at end of buffer
 
-      util.ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msgAssemblyCounters);
+  //    util.ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msgAssemblyCounters);
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {

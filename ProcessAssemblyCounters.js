@@ -2,7 +2,6 @@
 const common = require("@bgroves/common");
 const mariadb = require("mariadb");
 
-/*
 const {
   MQTT_SERVER,
   MQTT_PORT,
@@ -12,7 +11,7 @@ const {
   MYSQL_PASSWORD,
   MYSQL_DATABASE
 } = process.env;
-*/
+/*
 const MQTT_SERVER='localhost';
 const MQTT_PORT='1882';
 const MYSQL_HOSTNAME= "localhost";
@@ -20,7 +19,7 @@ const MYSQL_PORT='3305';
 const MYSQL_USERNAME= "brent";
 const MYSQL_PASSWORD= "JesusLives1!";
 const MYSQL_DATABASE= "mach2";
-
+*/
 const connectionString = {
   connectionLimit: 5,
   multipleStatements: true,
