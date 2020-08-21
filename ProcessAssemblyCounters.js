@@ -40,7 +40,7 @@ var Current_Value = {};
 
 
 
-async function ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msg) 
+async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey,nSetNo,msg) 
 {
   try
   {
@@ -48,33 +48,35 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,
     // There could be a % character at the end of message. 
     var iEnd = Math.trunc(msg.length / 10);
 
-    // Initialize datagram, set number, and retrieve IncrementBy value
-    // if this is the first Datagram_Key received.
-    if (Current_Value[nDatagramKey] === undefined)
+    // Initialize the Current_Value objects CNCPartOperationKey property, and retrieve IncrementBy value
+    // if this is the first message for the CNCPartOperationKey,Set_No pair received.
+    if (Current_Value[nCNCPartOperationKey] === undefined)
     {
-        Current_Value[nDatagramKey] = {};
+        Current_Value[nCNCPartOperationKey] = {};
+    }
+    if (Current_Value[nCNCPartOperationKey][nSetNo] === undefined)
+    {
+        Current_Value[nCNCPartOperationKey][nSetNo] = {};
+         
+    }
+    
+/*
         let conn;
         try {
           conn = await pool.getConnection();      
-          const resultSets = await conn.query('call GetIncrementBy(?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nDatagramKey]);
+          const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCPartOperationKey,nSetNo,nBlock_No]);
           let incrementBy = resultSets[1][0].pIncrementBy;
           let returnValue = resultSets[1][0].pReturnValue;
           common.log(`GetIncrementBy.incrementBy=${incrementBy},returnValue=${returnValue}`);
-          Current_Value[nDatagramKey].IncrementBy = incrementBy;
+          Current_Value[nCNCPartOperationKey].IncrementBy = incrementBy;
         } catch (err) {
           // handle the error
           console.log(`Error =>${err}`);
         } finally {
           if (conn) conn.release(); //release to pool
         }
-      
-    }
-    if (Current_Value[nDatagramKey][nSetNo] === undefined)
-    {
-        Current_Value[nDatagramKey][nSetNo] = {};
-    }
-    
 
+*/
 
     // priming read for loop
     var iMsg = 0; 

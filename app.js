@@ -81,12 +81,12 @@ async function main() {
       
       let comma = msg.indexOf(",", startChar);
 
-      var sDatagramKey = msg.slice(0, comma).toString().trim();
-      var nDatagramKey = Number(sDatagramKey); // returns NaN
-      if (Number.isNaN(nDatagramKey)) {
+      var sCNCPartOperationKey = msg.slice(0, comma).toString().trim();
+      var nCNCPartOperationKey = Number(sCNCPartOperationKey); // returns NaN
+      if (Number.isNaN(nCNCPartOperationKey)) {
         throw new Error("Abort: sDatagramKey isNAN");
       } else {
-        common.log(`Datagram Key: ${sDatagramKey}`);
+        common.log(`Datagram Key: ${sCNCPartOperationKey}`);
       }
 
 
@@ -103,7 +103,7 @@ async function main() {
  
       var msgAssemblyCounters = msg.slice(startAssemblyCounters,msg.length);  // There could be a % character at end of buffer
 
-  //    util.ProcessAssemblyCounters(mqttClient,transDate,nDatagramKey,nSetNo,msgAssemblyCounters);
+      // util.ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey,nSetNo,msgAssemblyCounters);
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
