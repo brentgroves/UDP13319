@@ -192,13 +192,13 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
           CNC_Part_Operation_Key: nCNCPartOperationKey,
           Set_No: nSetNo,
           Block_No: nBlockNo,
-          Actual_Tool_Life: currentAssembly.RunningTotal,
+          Actual_Tool_Assembly_Life: currentAssembly.RunningTotal,
           Trans_Date: transDate,
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        console.log(`Published ToolChange => ${tcMsgString}`);
-        mqttClient.publish("ToolChange", tcMsgString);
+        console.log(`Published InsToolAssemblyChangeHistory => ${tcMsgString}`);
+        mqttClient.publish("InsToolAssemblyChangeHistory", tcMsgString);
         currentAssembly.PublishedToolChange = 1;
         // counter can be 0 or incrementBy depending on if the tool setter
         // changed the tool in mid cycle.
