@@ -206,7 +206,7 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
         publishNow = false;
       }
 
-      // Publish CounterUpdate if necessary
+      // Publish Counter Update and Fastest Cycle time check if necessary
       if (counter !== currentAssembly.Current_Value) {
         let tcMsg = {
           CNC_Part_Operation_Key: nCNCPartOperationKey,
@@ -217,8 +217,8 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        console.log(`Published UpdateCNCPartOperationAssemblyCurrentValue => ${tcMsgString}`);
-        mqttClient.publish("UpdateCNCPartOperationAssemblyCurrentValue", tcMsgString);
+        console.log(`Published UpdateCNCPartOperationAssembly => ${tcMsgString}`);
+        mqttClient.publish("UpdateCNCPartOperationAssembly", tcMsgString);
 
       }      
 
