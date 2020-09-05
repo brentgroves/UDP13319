@@ -108,7 +108,7 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
           conn = await pool.getConnection();      
           const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCPartOperationKey,nSetNo,nBlockNo]);
           let incrementBy = resultSets[1][0].pIncrementBy;
-          let returnValue = resultSets[1][0].pReturnValue;
+          // let returnValue = resultSets[1][0].pReturnValue;
           CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].Increment_By = incrementBy;
           CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].PublishedToolChange = 1;
           CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].RunningTotal = 0;
@@ -161,6 +161,58 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
         currentAssembly.RunningTotal = counter;
       }
       else if(
+/*
+https://www.tothenew.com/mean-node-js-development-consulting
+https://github.com/brentgroves/Okuma13319
+NST1   (Program cycle starts here)
+CALL OXXX0 PL=1  (Safety program)
+CALL OTLM  (Check tool life for every assembly)
+(CALL OZLX)  (Don't know what this is)
+G30P1
+B0.
+M60
+M208 (THIS IS WHERE THE TOOL COUNTERS ARE OUTPUT TO THE COM PORT. VC40 MUST EQUAL 1 TO WORK)
+...
+GOTO NST1
+
+https://github.com/brentgroves/UDP13319
+ProcessAssemblyCounters.js - Program that processes the output that results from the 
+execution of the M208 command.
+
+Case 1:
+1. Cycle completes and all counters have been incremented, 
+2. program jumps to NST1.
+3. OTLM is executed and a tool life condition was found.
+4. At this point M208 has not yet recorded the latest tool counter increments.
+5. The tool setter changes the tool and resets the counter to 0.
+6. The program is reset and OTLM is executed with no alarms.
+7. A pallet change occurs and the tool counter reader subroutine, OCOM1.SSB, is ran.
+8. This function, ProcessAssemblyCounters(),is processed and finds the tool counter equal to 0. 
+9. The running total IS incremented.
+10. The tool life is recorded.
+
+Case 2:
+1. Before the cycle completes the tool setter changes the tool.
+2. The tool setter resets the counter to 0.
+3. The tool setter starts the program from where he stopped it probably at an M01 instruction.
+4. The tool counter is incremented.
+5. The cycle completes and the program jumps to instruction NST1.
+6. Subroutine OTLM.SSB executes without alarms.
+7. A pallet change occurs and the tool counter subroutine, OCOM1.SSB, is ran.
+8. This function, ProcessAssemblyCounters(), is processed and finds the tool counter equal to the Increment_By value.
+9. We do NOT increment RunningTotal.
+10. The tool life is recorded.
+
+Case 3: (Non-Aluminum job)
+1. The tool setter examines the tool assembly and decides not to change the tooling.
+2. The tool setter rolls back the tool counter. 
+3. This function, ProcessAssemblyCounters(), is executed and the RunningTotal is incremented.
+
+Case 4: (Aluminum jobs)
+1. The tool setter examines the tool assembly and decides not to change the tooling.
+2. The tool setter increase the tool life in OTLM.SSB.
+3. This function, ProcessAssemblyCounters(), is executed and the RunningTotal is incremented.
+*/        
         // Counter was set to 0 and tool was changed 
         // or Counter was rolled back because the tool was still OK
         // But not if Tool setter reset counter in mid cycle before
