@@ -78,7 +78,7 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
           common.log(`CNC_Part_Operation_Assembly=${JSON.stringify(CNC_Part_Operation_Assembly)}`);
         } catch (err) {
           // handle the error
-          console.log(`Error =>${err}`);
+          common.log(`Error =>${err}`);
         } finally {
           if (conn) conn.release(); //release to pool
         }
@@ -94,7 +94,7 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
     if (Number.isNaN(counter)) {
       throw new Error(`"Abort in priming read the 1st counter in datagram isNAN`);
     } else {
-      console.log(`msg=${msg}`);
+      common.log(`msg=${msg}`);
     }
 
     var nBlockNo;
@@ -117,7 +117,7 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
 
         } catch (err) {
           // handle the error
-          console.log(`Error =>${err}`);
+          common.log(`Error =>${err}`);
         } finally {
           if (conn) conn.release(); //release to pool
         }
@@ -232,7 +232,7 @@ Case 4: (Aluminum jobs)
         // put in the correct location.
         // Do nothing in this case.
       }
-      console.log(`currentAssembly=${JSON.stringify(currentAssembly)}`);
+      common.log(`currentAssembly=${JSON.stringify(currentAssembly)}`);
 
       // Publish Tool change if necessary
       if(publishNow)
@@ -249,7 +249,7 @@ Case 4: (Aluminum jobs)
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        console.log(`Published InsToolAssemblyChangeHistory => ${tcMsgString}`);
+        common.log(`Published InsToolAssemblyChangeHistory => ${tcMsgString}`);
         mqttClient.publish("InsToolAssemblyChangeHistory", tcMsgString);
         currentAssembly.PublishedToolChange = 1;
         // counter can be 0 or incrementBy depending on if the tool setter
@@ -269,14 +269,14 @@ Case 4: (Aluminum jobs)
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        console.log(`Published UpdateCNCPartOperationAssembly => ${tcMsgString}`);
+        common.log(`Published UpdateCNCPartOperationAssembly => ${tcMsgString}`);
         mqttClient.publish("UpdateCNCPartOperationAssembly", tcMsgString);
 
       }      
 
       // Update Value with current Common Variable value just recieved
       currentAssembly.Current_Value = counter; 
-      console.log(`updated currentAssembly.Current_Value=${currentAssembly.Current_Value}`);
+      common.log(`updated currentAssembly.Current_Value=${currentAssembly.Current_Value}`);
       // increment msg pointer 
       if((iMsg + 10) <= msg.length)
       {
@@ -286,7 +286,7 @@ Case 4: (Aluminum jobs)
       }
     }
   } catch (e) {
-    console.log(`caught exception! ${e}`);
+    common.log(`caught exception! ${e}`);
   } finally {
     //
   }
