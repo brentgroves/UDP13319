@@ -36,10 +36,10 @@ const pool = mariadb.createPool( connectionString);
 
 
 
-var CNC_Part_Operation_Assembly = {};
+var CNC_Tool_Op_Part_Life = {};
 
 
-async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey,nSetNo,msg) 
+async function ProcessToolCounters(mqttClient,transDate,nCNCApprovedWorkcenterKey,nSetNo,msg) 
 {
   try
   {
@@ -47,35 +47,35 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
     // There could be a % character at the end of message. 
     var iEnd = Math.trunc(msg.length / 10);
 
-    // Initialize the Current_Value objects CNCPartOperationKey property, and retrieve IncrementBy value
-    // if this is the first message for the CNCPartOperationKey,Set_No pair received.
-    if (CNC_Part_Operation_Assembly[nCNCPartOperationKey] === undefined)
+    // Initialize the Current_Value objects CNCApprovedWorkcenterKey, property, and retrieve IncrementBy value
+    // if this is the first message for the CNCApprovedWorkcenterKey,Set_No pair received.
+    if (CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey] === undefined)
     {
-      CNC_Part_Operation_Assembly[nCNCPartOperationKey] = {};
+      CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey] = {};
     }
-    if (CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo] === undefined)
+    if (CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo] === undefined)
     {
-      CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo] = {};
+      CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo] = {};
          
     }
 
     /*
      var nBlockNo = 1;
-      if (CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo] === undefined)
+      if (CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo] === undefined)
       {
-        CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo] = {};
+        CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo] = {};
         let conn;
         try {
           conn = await pool.getConnection();      
-          const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCPartOperationKey,nSetNo,nBlockNo]);
+          const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCApprovedWorkcenterKey,nSetNo,nBlockNo]);
           let incrementBy = resultSets[1][0].pIncrementBy;
           let returnValue = resultSets[1][0].pReturnValue;
           common.log(`GetIncrementBy.incrementBy=${incrementBy},returnValue=${returnValue}`);
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].Increment_By = incrementBy;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].PublishedToolChange = 1;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].RunningTotal = 0;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].Current_Value = 0;
-          common.log(`CNC_Part_Operation_Assembly=${JSON.stringify(CNC_Part_Operation_Assembly)}`);
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].Increment_By = incrementBy;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].PublishedToolChange = 1;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].RunningTotal = 0;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].Current_Value = 0;
+          common.log(`CNC_Tool_Op_Part_Life=${JSON.stringify(CNC_Tool_Op_Part_Life)}`);
         } catch (err) {
           // handle the error
           common.log(`Error =>${err}`);
@@ -100,20 +100,20 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
     var nBlockNo;
     for (nBlockNo = 1; nBlockNo <= iEnd; nBlockNo++) 
     {
-      if (CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo] === undefined)
+      if (CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo] === undefined)
       {
-        CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo] = {};
+        CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo] = {};
         let conn;
         try {
           conn = await pool.getConnection();      
-          const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCPartOperationKey,nSetNo,nBlockNo]);
+          const resultSets = await conn.query('call GetIncrementBy(?,?,?,@IncrementBy,@ReturnValue); select @IncrementBy as pIncrementBy,@ReturnValue as pReturnValue',[nCNCApprovedWorkcenterKey,nSetNo,nBlockNo]);
           let incrementBy = resultSets[1][0].pIncrementBy;
           // let returnValue = resultSets[1][0].pReturnValue;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].Increment_By = incrementBy;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].PublishedToolChange = 1;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].RunningTotal = 0;
-          CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo].Current_Value = 0;
-          common.log(`Start => CNC_Part_Operation_Assembly=${JSON.stringify(CNC_Part_Operation_Assembly)}`);
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].Increment_By = incrementBy;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].PublishedToolChange = 1;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].RunningTotal = 0;
+          CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo].Current_Value = 0;
+          common.log(`Start => CNC_Tool_Op_Part_Life=${JSON.stringify(CNC_Tool_Op_Part_Life)}`);
 
         } catch (err) {
           // handle the error
@@ -123,23 +123,23 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
         }
            
       }
-      var currentAssembly = CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo];
+      var currentTool = CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo];
       var publishNow=false;
       // CodeChange: Replaced 10 with rTool.IncrementBy
-      if (counter <= currentAssembly.Increment_By) 
+      if (counter <= currentTool.Increment_By) 
       {
         /* 
         We need to record the tool change during this time period
         if we have not already done so. 
         
-        Depending on when in the CNC cycle the toolsetter performs
+        Depending on  when in the CNC cycle the toolsetter performs
         the toolchange this value could be 0 or IncrementBy.
 
         PublishedToolChange is initialized to 1 so when the program 
         first starts we will not see this condition as tool change if
         the common variable happens to be less than or equal to the IncrementBy value.
         */
-        if (currentAssembly.PublishedToolChange === 0) 
+        if (currentTool.PublishedToolChange === 0) 
         {
           publishNow=true;
         }
@@ -150,15 +150,15 @@ async function ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey
         // any previous tool change if needed; so the next time the
         // counter gets set back to less than the IncrementBy value a new tool change
         // probably occurred and we need to Publish it.
-        currentAssembly.PublishedToolChange = 0;
+        currentTool.PublishedToolChange = 0;
       }
 
-      if ((counter - currentAssembly.Increment_By) > currentAssembly.Current_Value)
+      if ((counter - currentTool.Increment_By) > currentTool.Current_Value)
       {
         // program may have just started so we need to initialize
         // the running total with this value.  Current_Value and RunningTotals 
         // are initialized to 0' so if counter is 0 nothing will change.
-        currentAssembly.RunningTotal = counter;
+        currentTool.RunningTotal = counter;
       }
       else if(
 /*
@@ -219,49 +219,49 @@ Case 4: (Aluminum jobs)
         // a pallet change and before tool cut. In this case 
         // the running total should not be updated until it has
         // been published as the previous tools tool life.
-        ((counter < currentAssembly.Current_Value) && (counter != currentAssembly.Increment_By)) ||  
+        ((counter < currentTool.Current_Value) && (counter != currentTool.Increment_By)) ||  
         // Normal GCode incrementBy for 1 cycle
-        ((counter - currentAssembly.Increment_By) === currentAssembly.Current_Value) 
+        ((counter - currentTool.Increment_By) === currentTool.Current_Value) 
       ) 
       {
-        currentAssembly.RunningTotal += currentAssembly.Increment_By;
+        currentTool.RunningTotal += currentTool.Increment_By;
       }
-      else if ((counter === currentAssembly.Current_Value)) {
+      else if ((counter === currentTool.Current_Value)) {
         // If we will receive the same value multiple times.
         // This should not happen if the call to Tracker.SSB is 
         // put in the correct location.
         // Do nothing in this case.
       }
-      common.log(`currentAssembly=${JSON.stringify(currentAssembly)}`);
+      common.log(`currentTool=${JSON.stringify(currentTool)}`);
 
       // Publish Tool change if necessary
       if(publishNow)
       {
-        //  CNC_Part_Operation_Assembly[nCNCPartOperationKey][nSetNo][nBlockNo]
-        //[nCNCPartOperationKey,nSetNo,nBlockNo]);
+        //  CNC_Tool_Op_Part_Life[nCNCApprovedWorkcenterKey][nSetNo][nBlockNo]
+        //[nCNCApprovedWorkcenterKey,nSetNo,nBlockNo]);
 
         let tcMsg = {
-          CNC_Part_Operation_Key: nCNCPartOperationKey,
+          CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
           Set_No: nSetNo,
           Block_No: nBlockNo,
-          Actual_Tool_Assembly_Life: currentAssembly.RunningTotal,
-          Trans_Date: transDate,
+          Run_Quantity: currentTool.RunningTotal,
+          Run_Date: transDate,
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        common.log(`Published InsToolAssemblyChangeHistory => ${tcMsgString}`);
-        mqttClient.publish("InsToolAssemblyChangeHistory", tcMsgString);
-        currentAssembly.PublishedToolChange = 1;
+        common.log(`Published InsToolLifeHistory => ${tcMsgString}`);
+        mqttClient.publish("InsToolLifeHistory", tcMsgString);
+        currentTool.PublishedToolChange = 1;
         // counter can be 0 or incrementBy depending on if the tool setter
         // changed the tool in mid cycle.
-        currentAssembly.RunningTotal=counter;  
+        currentTool.RunningTotal=counter;  
         publishNow = false;
       }
 
       // Publish Counter Update and Fastest Cycle time check if necessary
-      if (counter !== currentAssembly.Current_Value) {
+      if (counter !== currentTool.Current_Value) {
         let tcMsg = {
-          CNC_Part_Operation_Key: nCNCPartOperationKey,
+          CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
           Set_No: nSetNo,
           Block_No: nBlockNo,
           Current_Value: counter,
@@ -269,14 +269,14 @@ Case 4: (Aluminum jobs)
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
-        common.log(`Published UpdateCNCPartOperationAssembly => ${tcMsgString}`);
-        mqttClient.publish("UpdateCNCPartOperationAssembly", tcMsgString);
+        common.log(`Published UpdateCNCToolOpPartLife; => ${tcMsgString}`);
+        mqttClient.publish("UpdateCNCToolOpPartLife;", tcMsgString);
 
       }      
 
       // Update Value with current Common Variable value just recieved
-      currentAssembly.Current_Value = counter; 
-      common.log(`updated currentAssembly.Current_Value=${currentAssembly.Current_Value}`);
+      currentTool.Current_Value = counter; 
+      common.log(`updated currentTool.Current_Value=${currentTool.Current_Value}`);
       // increment msg pointer 
       if((iMsg + 10) <= msg.length)
       {
@@ -293,5 +293,5 @@ Case 4: (Aluminum jobs)
 }
 
 module.exports = {
-  ProcessAssemblyCounters
+  ProcessToolCounters
 }

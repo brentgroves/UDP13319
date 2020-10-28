@@ -6,7 +6,7 @@ const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
 const { exit } = require("process");
 const { start } = require("repl");
-const util = require("./ProcessAssemblyCounters");
+const util = require("./ProcessToolCounters");
 
 var { MQTT_SERVER, UDP_PORT } = process.env;
 // const MQTT_SERVER = 'localhost';
@@ -81,12 +81,12 @@ async function main() {
       
       let comma = msg.indexOf(",", startChar);
 
-      var sCNCPartOperationKey = msg.slice(startChar, comma).toString().trim();
-      var nCNCPartOperationKey = Number(sCNCPartOperationKey); // returns NaN
-      if (Number.isNaN(nCNCPartOperationKey)) {
-        throw new Error("Abort: CNCPartOperationKey isNAN");
+      var sCNCApprovedWorkcenterKey = msg.slice(startChar, comma).toString().trim();
+      var nCNCApprovedWorkcenterKey = Number(sCNCApprovedWorkcenterKey); // returns NaN
+      if (Number.isNaN(nCNCApprovedWorkcenterKey)) {
+        throw new Error("Abort: CNCApprovedWorkcenterKey isNAN");
       } else {
-        common.log(`CNCPartOperationKey: ${sCNCPartOperationKey}`);
+        common.log(`CNCApprovedWorkcenterKey: ${sCNCApprovedWorkcenterKey}`);
       }
 
 
@@ -98,12 +98,15 @@ async function main() {
         common.log(`Set No: ${sSetNo}`);
       }
 
-      // All of the remaining data sent is contained in a fixed length 10-byte format
-      var startAssemblyCounters = comma + 3;  // Priming read
- 
-      var msgAssemblyCounters = msg.slice(startAssemblyCounters,msg.length);  // There could be a % character at end of buffer
+      if((nSetNo>=1) && (nSetNo<50))
+      {
+        // All of the remaining data sent is contained in a fixed length 10-byte format
+        var startToolCounters = comma + 3;  // Priming read
+  
+        var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
 
-      util.ProcessAssemblyCounters(mqttClient,transDate,nCNCPartOperationKey,nSetNo,msgAssemblyCounters);
+        util.ProcessToolCounters(mqttClient,transDate,nCNCApprovedWorkcenterKey,nSetNo,msgToolCounters);
+      }
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
