@@ -232,7 +232,7 @@ Case 4: (Aluminum jobs)
         // put in the correct location.
         // Do nothing in this case.
       }
-      common.log(`currentTool=${JSON.stringify(currentTool)}`);
+      common.log(`counter === currentValue : currentTool=${JSON.stringify(currentTool)}`);
 
       // Publish Tool change if necessary
       if(publishNow)
@@ -264,13 +264,15 @@ Case 4: (Aluminum jobs)
           CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
           Set_No: nSetNo,
           Block_No: nBlockNo,
-          Current_Value: counter,
+          Current_Value: counter,  // We need this for tool change alerts
+          Running_Total: currentTool.RunningTotal, // We need this to see how many parts 
+          // have been machined for this part.
           Last_Update: transDate
         };
 
         let tcMsgString = JSON.stringify(tcMsg);
         common.log(`Published UpdateCNCToolOpPartLife; => ${tcMsgString}`);
-        mqttClient.publish("UpdateCNCToolOpPartLife;", tcMsgString);
+        mqttClient.publish("UpdateCNCToolOpPartLife", tcMsgString);
 
       }      
 

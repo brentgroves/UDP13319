@@ -98,7 +98,8 @@ async function main() {
         common.log(`Set No: ${sSetNo}`);
       }
 
-      if((nSetNo>=1) && (nSetNo<50))
+      if((nSetNo>=1) && (nSetNo<50) && (2==nCNCApprovedWorkcenterKey))  // Testing only
+//      if((nSetNo>=1) && (nSetNo<50) && (2==nCNCApprovedWorkcenterKey))
       {
         // All of the remaining data sent is contained in a fixed length 10-byte format
         var startToolCounters = comma + 3;  // Priming read
