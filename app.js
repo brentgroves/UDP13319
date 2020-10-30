@@ -8,10 +8,14 @@ const { exit } = require("process");
 const { start } = require("repl");
 const util = require("./ProcessToolCounters");
 
-var { MQTT_SERVER, UDP_PORT } = process.env;
+var { MQTT_SERVER, UDP_PORT, START_MACHINING, END_MACHINING } = process.env;
 // const MQTT_SERVER = 'localhost';
 // const UDP_PORT = 2222;
+// const  START_MACHINING = 50;
+// const  END_MACHINING = 51;
+
 var nextLine = 1;
+
 // --------------------creating a udp server --------------------
 
 
@@ -108,6 +112,8 @@ async function main() {
 
         util.ProcessToolCounters(mqttClient,transDate,nCNCApprovedWorkcenterKey,nSetNo,msgToolCounters);
       }
+//      const  START_MACHINING = 50;
+
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
