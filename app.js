@@ -7,6 +7,7 @@ const common = require("@bgroves/common");
 const { exit } = require("process");
 const { start } = require("repl");
 const util = require("./ProcessToolCounters");
+const amh = require("./ProcessMachiningHistory");
 
 var { MQTT_SERVER, UDP_PORT, START_MACHINING, END_MACHINING } = process.env;
 // const MQTT_SERVER = 'localhost';
@@ -130,7 +131,7 @@ async function main() {
       if (nCmd >= 50 && nCmd <= 51) {
         switch (nCmd) {
           case START_MACHINING:
-            util.ProcessAssemblyMachiningStart(
+            amh.ProcessAssemblyMachiningStart(
               mqttClient,
               transDate,
               nCNCApprovedWorkcenterKey,
@@ -138,7 +139,7 @@ async function main() {
             );
             break;
           case END_MACHINING:
-            util.ProcessAssemblyMachiningEnd(
+            amh.ProcessAssemblyMachiningEnd(
               mqttClient,
               transDate,
               nCNCApprovedWorkcenterKey,
