@@ -18,7 +18,6 @@ var nextLine = 1;
 
 // --------------------creating a udp server --------------------
 
-
 async function main() {
   const mqttClient = mqtt.connect(`mqtt://${MQTT_SERVER}`);
 
@@ -52,10 +51,10 @@ async function main() {
       if (0x12 == msg[0]) {
         common.log(`Increment startChar: 0x12==msg[0]`);
         startChar++; // sometimes DC2 will arrive with line #1 and sometimes it is in a datagram by itself.
-      }  // If there are multiple datagrams sent with 1 write only the
+      } // If there are multiple datagrams sent with 1 write only the
       // 1st one will have DC2.  If there is more than one write() in the
       // GCode because we are transferring more than 160 characters.  There
-      // will be another DC2 character on subsequent datagrams.  
+      // will be another DC2 character on subsequent datagrams.
 
       /*
       COM DATA FORMAT: DC2 - AT MOST 160 BYTES OF DATA - '%' - DC4.
@@ -77,15 +76,18 @@ async function main() {
 
       // I am only recieving 7 of the first 10 bytes being sent on
       // the second datagram message; maybe this is because of the 3 control
-      // characters being sent: DC2,DC4, and %.  
-      // Since the first 10-byte block is a header that contains the 
-      // datagram number and it will only be 2 bytes long so we can preceed 
+      // characters being sent: DC2,DC4, and %.
+      // Since the first 10-byte block is a header that contains the
+      // datagram number and it will only be 2 bytes long so we can preceed
       // it with a comma to determine its starting position since we can not
       // rely on recieving all 10 bytes of the 1st 10-byte block sent.
-      
+
       let comma = msg.indexOf(",", startChar);
 
-      var sCNCApprovedWorkcenterKey = msg.slice(startChar, comma).toString().trim();
+      var sCNCApprovedWorkcenterKey = msg
+        .slice(startChar, comma)
+        .toString()
+        .trim();
       var nCNCApprovedWorkcenterKey = Number(sCNCApprovedWorkcenterKey); // returns NaN
       if (Number.isNaN(nCNCApprovedWorkcenterKey)) {
         throw new Error("Abort: CNCApprovedWorkcenterKey isNAN");
@@ -93,8 +95,10 @@ async function main() {
         common.log(`CNCApprovedWorkcenterKey: ${sCNCApprovedWorkcenterKey}`);
       }
 
-
-      var sSetNo = msg.slice(comma+1, comma+3).toString().trim();
+      var sSetNo = msg
+        .slice(comma + 1, comma + 3)
+        .toString()
+        .trim();
       var nSetNo = Number(sSetNo); // returns NaN
       if (Number.isNaN(nSetNo)) {
         throw new Error("Abort: sSetNo isNAN");
@@ -102,18 +106,49 @@ async function main() {
         common.log(`Set No: ${sSetNo}`);
       }
 
-      if((nSetNo>=1) && (nSetNo<50) && (2==nCNCApprovedWorkcenterKey))  // Testing only
-//      if((nSetNo>=1) && (nSetNo<50) && (2==nCNCApprovedWorkcenterKey))
-      {
-        // All of the remaining data sent is contained in a fixed length 10-byte format
-        var startToolCounters = comma + 3;  // Priming read
+      /*
+      var startToolCounters = comma + 3;  // Priming read
   
-        var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
+      var msgToolCounters = msg.slice(startToolCounters,msg.length);  // There could be a % character at end of buffer
+      */
+      var startMsgBody = comma + 3;
+      var msgBody = msg.slice(startMsgBody, msg.length); // There could be a % character at end of buffer
 
-        util.ProcessToolCounters(mqttClient,transDate,nCNCApprovedWorkcenterKey,nSetNo,msgToolCounters);
+      if (nSetNo >= 1 && nSetNo < 50 && 2 == nCNCApprovedWorkcenterKey) {
+        // Testing only
+        //      if((nSetNo>=1) && (nSetNo<50))
+        // All of the remaining data sent is contained in a fixed length 10-byte format
+        util.ProcessToolCounters(
+          mqttClient,
+          transDate,
+          nCNCApprovedWorkcenterKey,
+          nSetNo,
+          msgBody
+        );
       }
-//      const  START_MACHINING = 50;
-
+      var nCmd = nSetNo; // rename variable since this is not a set but a cmd.
+      if (nCmd >= 50 && nCmd <= 51) {
+        switch (nCmd) {
+          case START_MACHINING:
+            util.ProcessAssemblyMachiningStart(
+              mqttClient,
+              transDate,
+              nCNCApprovedWorkcenterKey,
+              msgBody
+            );
+            break;
+          case END_MACHINING:
+            util.ProcessAssemblyMachiningEnd(
+              mqttClient,
+              transDate,
+              nCNCApprovedWorkcenterKey,
+              msgBody
+            );
+            break;
+          default:
+          // code block
+        }
+      }
     } catch (e) {
       common.log(`caught exception! ${e}`);
     } finally {
