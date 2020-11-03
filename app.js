@@ -127,8 +127,12 @@ async function main() {
           msgBody
         );
       }
+      common.log(`1. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd}`);
       var nCmd = nSetNo; // rename variable since this is not a set but a cmd.
+      common.log(`2. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd}`);
       if (nCmd >= 50 && nCmd <= 51) {
+        common.log(`3. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd} START_MACHINING=${START_MACHINING} END_MACHINING = ${END_MACHINING}`);
+
         switch (nCmd) {
           case START_MACHINING:
             amh.ProcessAssemblyMachiningStart(

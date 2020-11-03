@@ -62,6 +62,7 @@ async function ProcessAssemblyMachiningStart(mqttClient,transDate,nCNCApprovedWo
 {
     try
     {
+        common.log(`10. UDP13319=>ProcessAssemblyMachiningStart`);
         var iMsg = 0; 
         if(msg.length<20)
         {
@@ -108,6 +109,8 @@ async function ProcessAssemblyMachiningEnd(mqttClient,transDate,nCNCApprovedWork
 {
     try
     {
+        common.log(`20. UDP13319=>ProcessAssemblyMachiningEnd`);
+
         var iMsg = 0; 
         if(msg.length<20)
         {
