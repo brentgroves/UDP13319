@@ -58,7 +58,7 @@ CREATE TABLE Assembly_Machining_History (
 */
 var Assembly_Machining_History = {};
 
-async function ProcessAssemblyMachingStart(mqttClient,transDate,nCNCApprovedWorkcenterKey,msg) 
+async function ProcessAssemblyMachiningStart(mqttClient,transDate,nCNCApprovedWorkcenterKey,msg) 
 {
     try
     {
