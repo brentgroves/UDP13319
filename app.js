@@ -9,7 +9,7 @@ const { start } = require("repl");
 const util = require("./ProcessToolCounters");
 const amh = require("./ProcessMachiningHistory");
 
-var { MQTT_SERVER, UDP_PORT, START_MACHINING, END_MACHINING } = process.env;
+var { MQTT_SERVER, UDP_PORT } = process.env;
 // const MQTT_SERVER = 'localhost';
 // const UDP_PORT = 2222;
 // const  START_MACHINING = 50;
@@ -127,32 +127,13 @@ async function main() {
           msgBody
         );
       }
-      common.log(`1. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd}`);
-      var nCmd = nSetNo; // rename variable since this is not a set but a cmd.
-      common.log(`2. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd}`);
-      if (nCmd >= 50 && nCmd <= 51) {
-        common.log(`3. UDP13319=>nSetNo=${nSetNo} nCmd=>${nCmd} START_MACHINING=${START_MACHINING} END_MACHINING = ${END_MACHINING}`);
-
-        switch (nCmd) {
-          case START_MACHINING:
-            amh.ProcessAssemblyMachiningStart(
-              mqttClient,
-              transDate,
-              nCNCApprovedWorkcenterKey,
-              msgBody
-            );
-            break;
-          case END_MACHINING:
-            amh.ProcessAssemblyMachiningEnd(
-              mqttClient,
-              transDate,
-              nCNCApprovedWorkcenterKey,
-              msgBody
-            );
-            break;
-          default:
-          // code block
-        }
+      if (nSetNo == 60) {
+          amh.ProcessAssemblyMachining(
+            mqttClient,
+            transDate,
+            nCNCApprovedWorkcenterKey,
+            msgBody
+          );
       }
     } catch (e) {
       common.log(`caught exception! ${e}`);

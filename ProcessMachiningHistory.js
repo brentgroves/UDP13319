@@ -9,9 +9,9 @@ const {
   MYSQL_PORT,
   MYSQL_USERNAME,
   MYSQL_PASSWORD,
-  MYSQL_DATABASE, 
-  START_MACHINING, 
-  END_MACHINING
+  MYSQL_DATABASE,
+  START_MACHINING,
+  END_MACHINING,
 } = process.env;
 
 /*
@@ -33,12 +33,14 @@ const connectionString = {
   port: MYSQL_PORT,
   user: MYSQL_USERNAME,
   password: MYSQL_PASSWORD,
-  database: MYSQL_DATABASE
-}
+  database: MYSQL_DATABASE,
+};
 
-common.log(`user: ${MYSQL_USERNAME},password: ${MYSQL_PASSWORD}, database: ${MYSQL_DATABASE}, MYSQL_HOSTNAME: ${MYSQL_HOSTNAME}, MYSQL_PORT: ${MYSQL_PORT}`);
+common.log(
+  `user: ${MYSQL_USERNAME},password: ${MYSQL_PASSWORD}, database: ${MYSQL_DATABASE}, MYSQL_HOSTNAME: ${MYSQL_HOSTNAME}, MYSQL_PORT: ${MYSQL_PORT}`
+);
 
-const pool = mariadb.createPool( connectionString);
+const pool = mariadb.createPool(connectionString);
 
 /*
 CREATE TABLE Assembly_Machining_History (
@@ -58,105 +60,181 @@ CREATE TABLE Assembly_Machining_History (
 */
 var Assembly_Machining_History = {};
 
-async function ProcessAssemblyMachiningStart(mqttClient,transDate,nCNCApprovedWorkcenterKey,msg) 
-{
-    try
-    {
-        common.log(`10. UDP13319=>ProcessAssemblyMachiningStart`);
-        var iMsg = 0; 
-        if(msg.length<20)
-        {
-            throw new Error(`ProcessAssemblyMachingStart msg.length<20`);
-        }
-        var sToolNo = msg.slice(iMsg, iMsg + 10).toString().trim();
-        var nToolNo = Number(sToolNo); // returns NaN
-        if(Number.isNaN(nToolNo))
-        {
-            throw new Error(`ProcessAssemblyMachingStart nToolNo isNAN()`);
-        }
-        
-        iMsg+=10;
-        var sPalletNo = msg.slice(iMsg+10, iMsg + 10).toString().trim();
-        var nPalletNo = Number(sPalletNo); // returns NaN
-        if(Number.isNaN(nPalletNo))
-        {
-            throw new Error(`ProcessAssemblyMachingStart nPalletNo isNAN()`);
-        }
-    
-        if(Assembly_Machining_History[nCNCApprovedWorkcenterKey] === undefined)
-        {
-            Assembly_Machining_History[nCNCApprovedWorkcenterKey] = {};
-        }
-        if(Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo] === undefined)
-        {
-            Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo] = {};
-
-        }
-        if(Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][nToolNo] === undefined)
-        {
-            Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPallet_No][nToolNo] = {};
-
-        }
-        Assembly_Machining_History[nCNCApprovedWorkcenterKey][Pallet_No][nToolNo].Start_Time = transDate;
-    } catch (e) {
-        common.log(`caught exception! ${e}`);
-    } finally {
-        //
+async function ProcessAssemblyMachiningStart(
+  mqttClient,
+  transDate,
+  nCNCApprovedWorkcenterKey,
+  msg
+) {
+  try {
+    common.log(`10. UDP13319=>ProcessAssemblyMachiningStart`);
+    var iMsg = 0;
+    if (msg.length < 20) {
+      throw new Error(`ProcessAssemblyMachingStart msg.length<20`);
     }
+    common.log(`15. ProcessAssemblyMachiningStart.msg = ${msg}`);
+    var sPalletNo = msg
+      .slice(iMsg, iMsg + 10)
+      .toString()
+      .trim();
+    common.log(`16. ProcessAssemblyMachiningStart.sPalletNo = ${sPalletNo}`);
+      var nPalletNo = Number(sPalletNo); // returns NaN
+    if (Number.isNaN(nPalletNo)) {
+      throw new Error(`ProcessAssemblyMachingStart nPalletNo isNAN()`);
+    }
+
+    iMsg += 10;
+    var sToolNo = msg
+      .slice(iMsg, iMsg + 10)
+      .toString()
+      .trim();
+    var nToolNo = Number(sToolNo); // returns NaN
+    if (Number.isNaN(nToolNo)) {
+      throw new Error(`ProcessAssemblyMachingStart nToolNo isNAN()`);
+    }
+
+
+    if (Assembly_Machining_History[nCNCApprovedWorkcenterKey] === undefined) {
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey] = {};
+    }
+    if (
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo] ===
+      undefined
+    ) {
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo] = {};
+    }
+    if (
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][
+        nToolNo
+      ] === undefined
+    ) {
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][
+        nToolNo
+      ] = {};
+    }
+    Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][
+      nToolNo
+    ].Start_Time = transDate;
+  } catch (e) {
+    common.log(`caught exception! ${e}`);
+  } finally {
+    //
+  }
 }
 
-async function ProcessAssemblyMachiningEnd(mqttClient,transDate,nCNCApprovedWorkcenterKey,msg) 
-{
-    try
-    {
-        common.log(`20. UDP13319=>ProcessAssemblyMachiningEnd`);
+async function ProcessAssemblyMachiningEnd(
+  mqttClient,
+  transDate,
+  nCNCApprovedWorkcenterKey,
+  msg
+) {
+  try {
+    common.log(`20. UDP13319=>ProcessAssemblyMachiningEnd`);
 
-        var iMsg = 0; 
-        if(msg.length<20)
-        {
-            throw new Error(`ProcessAssemblyMachiningEnd msg.length<20`);
-        }
-        var sToolNo = msg.slice(iMsg, iMsg + 10).toString().trim();
-        var nToolNo = Number(sToolNo); // returns NaN
-        if(Number.isNaN(nToolNo))
-        {
-            throw new Error(`ProcessAssemblyMachiningEnd nToolNo isNAN()`);
-        }
-        
-        iMsg+=10;
-        var sPalletNo = msg.slice(iMsg+10, iMsg + 10).toString().trim();
-        var nPalletNo = Number(sPalletNo); // returns NaN
-        if(Number.isNaN(nPalletNo))
-        {
-            throw new Error(`ProcessAssemblyMachiningEnd nPalletNo isNAN()`);
-        }
-        if(Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][nToolNo].Start_Time === undefined)
-        {
-            throw new Error(`ProcessAssemblyMachiningEnd StartTime is undefined`);
-
-        }
-        Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPallet_No][nToolNo].End_Time = transDate;
-        let tcMsg = {
-            CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
-            Pallet_No:nPalletNo,
-            Tool_No: nToolNo, 
-            Start_Time: Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][nToolNo].Start_Time,
-            End_Time: transDate,
-        };
-    
-        let tcMsgString = JSON.stringify(tcMsg);
-        common.log(`Published InsAssemblyMachiningHistory => ${tcMsgString}`);
-        mqttClient.publish("InsAssemblyMachiningHistory", tcMsgString);
-    
-    } catch (e) {
-        common.log(`caught exception! ${e}`);
-    } finally {
-        //
+    var iMsg = 0;
+    if (msg.length < 20) {
+      throw new Error(`ProcessAssemblyMachiningEnd msg.length<20`);
     }
+    var sPalletNo = msg
+      .slice(iMsg, iMsg + 10)
+      .toString()
+      .trim();
+    var nPalletNo = Number(sPalletNo); // returns NaN
+    if (Number.isNaN(nPalletNo)) {
+      throw new Error(`ProcessAssemblyMachingEnd nPalletNo isNAN()`);
+    }
+
+    iMsg += 10;
+    var sToolNo = msg
+      .slice(iMsg, iMsg + 10)
+      .toString()
+      .trim();
+    var nToolNo = Number(sToolNo); // returns NaN
+    if (Number.isNaN(nToolNo)) {
+      throw new Error(`ProcessAssemblyMachingEnd nToolNo isNAN()`);
+    }
+
+    if (
+      Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][nToolNo]
+        .Start_Time === undefined
+    ) {
+      throw new Error(`ProcessAssemblyMachiningEnd StartTime is undefined`);
+    }
+    Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][
+      nToolNo
+    ].End_Time = transDate;
+    let tcMsg = {
+      CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
+      Pallet_No: nPalletNo,
+      Tool_No: nToolNo,
+      Start_Time:
+        Assembly_Machining_History[nCNCApprovedWorkcenterKey][nPalletNo][
+          nToolNo
+        ].Start_Time,
+      End_Time: transDate,
+    };
+
+    let tcMsgString = JSON.stringify(tcMsg);
+    common.log(`Published InsAssemblyMachiningHistory => ${tcMsgString}`);
+    mqttClient.publish("InsAssemblyMachiningHistory", tcMsgString);
+  } catch (e) {
+    common.log(`caught exception! ${e}`);
+  } finally {
+    //
+  }
+}
+
+async function ProcessAssemblyMachining(
+  mqttClient,
+  transDate,
+  nCNCApprovedWorkcenterKey,
+  msg
+) {
+  try {
+    common.log(`30. UDP13319=>ProcessAssemblyMachining`);
+
+    var iMsg = 0;
+    if (msg.length < 10) {
+      throw new Error(`ProcessAssemblyMachining msg.length<10`);
+    }
+    var sCmd = msg
+      .slice(iMsg, iMsg + 10)
+      .toString()
+      .trim();
+    var nCmd = Number(sCmd); // returns NaN
+    if (Number.isNaN(nCmd)) {
+      throw new Error(`ProcessAssemblyMachining nCmd isNAN()`);
+    }
+    var msgBody = msg.slice(iMsg+10, msg.length); 
+
+    switch (sCmd) {
+      case START_MACHINING:
+        ProcessAssemblyMachiningStart(
+          mqttClient,
+          transDate,
+          nCNCApprovedWorkcenterKey,
+          msgBody
+        );
+        break;
+      case END_MACHINING:
+        ProcessAssemblyMachiningEnd(
+          mqttClient,
+          transDate,
+          nCNCApprovedWorkcenterKey,
+          msgBody
+        );
+        break;
+      default:
+        throw new Error(`ProcessAssemblyMachining invalid command`);
+        break;
+    }
+  } catch (e) {
+    common.log(`caught exception! ${e}`);
+  } finally {
+    //
+  }
 }
 
 module.exports = {
-  ProcessAssemblyMachiningStart,
-  ProcessAssemblyMachiningEnd
-}
-
+  ProcessAssemblyMachining,
+};
