@@ -7,7 +7,7 @@ const common = require("@bgroves/common");
 const { exit } = require("process");
 const { start } = require("repl");
 const util = require("./ProcessToolCounters");
-const amh = require("./ProcessMachiningHistory");
+const amh = require("./ToolAssemblyCommand");
 
 var { MQTT_SERVER, UDP_PORT } = process.env;
 // const MQTT_SERVER = 'localhost';
@@ -128,7 +128,7 @@ async function main() {
         );
       }
       if (nSetNo == 60) {
-          amh.ProcessAssemblyMachining(
+          amh.ProcessToolAssemblyCommand(
             mqttClient,
             transDate,
             nCNCApprovedWorkcenterKey,
