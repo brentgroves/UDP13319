@@ -1,5 +1,6 @@
 // https://node.readthedocs.io/en/latest/api/dgram/
 const common = require("@bgroves/common");
+const toolLife = require("./global");
 
 
 /*
@@ -19,6 +20,7 @@ CREATE TABLE ToolAssembly (
 
 */
 var ToolAssemblyTimer = {};
+const ToolLife = toolLife.ToolLife;
 
 async function StartMachining(
   transDate,
@@ -56,7 +58,7 @@ async function EndMachining(
   nCNCApprovedWorkcenterKey,
   nPalletNo,
   nToolVar
-) {
+){
   try {
     common.log(`UDP13319=>EndMachining->10`);
     if (
@@ -72,6 +74,8 @@ async function EndMachining(
       CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
       Pallet_No: nPalletNo,
       Tool_Var: nToolVar,
+      Current_Value: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].Current_Value,
+      Running_Total: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningTotal,
       Start_Time:
         ToolAssemblyTimer[nCNCApprovedWorkcenterKey][nPalletNo][nToolVar].Start_Time,
       End_Time: transDate,

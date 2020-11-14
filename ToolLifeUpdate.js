@@ -1,6 +1,7 @@
 // https://node.readthedocs.io/en/latest/api/dgram/
 const common = require("@bgroves/common");
 const mariadb = require("mariadb");
+const toolLife = require("./global");
 
 const {
   MYSQL_HOSTNAME,
@@ -32,7 +33,7 @@ common.log(`user: ${MYSQL_USERNAME},password: ${MYSQL_PASSWORD}, database: ${MYS
 
 const pool = mariadb.createPool( connectionString);
 
-var ToolLife = {}
+const ToolLife = toolLife.ToolLife;
 
 async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nToolVar,nToolCounter) 
 {
@@ -75,7 +76,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
           Case 10:
           1. The tool was changed and the counter was set to 0.
           2, The new tool assembly has machined exactly 1 set of parts.
-          3. This program has run the entire time.
+          3. This program has run the entire time the previous tool was machinining parts.
           */
           common.log(`UDP13319.ToolLifeUpdate().10.objToolVar.RunningEntireTime===1;`);
           let tcMsg = {

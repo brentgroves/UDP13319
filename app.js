@@ -34,23 +34,23 @@ async function main() {
   // emits on new datagram msg
   server.on("message", function (msg, info) {
     try {
-      common.log("Data received from client : " + msg.toString());
-      common.log(`Data received in hex =>${msg.toString("hex")}`);
-      common.log("Received %d bytes", msg.length);
+      // common.log("Data received from client : " + msg.toString());
+      // common.log(`Data received in hex =>${msg.toString("hex")}`);
+      // common.log("Received %d bytes", msg.length);
       // We recieve DC2,%,DC4 in datagrams by themself but receive all the common variable in one datagram.
       if (msg.length < 3) {
-        common.log(`Abort: msg.length<3`);
+//        common.log(`Abort: msg.length<3`);
         return;
       }
 
       const transDate = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-      common.log(`UDP13319 transDate=>${transDate}`);
+//      common.log(`UDP13319 transDate=>${transDate}`);
 
       // We receive up to 10 fixed length records in one datagram.  If we have more than 10 fixed length units
       // that are being sent then we will receive them in multiple datagrams.
       let startChar = 0;
       if (0x12 == msg[0]) {
-        common.log(`Increment startChar: 0x12==msg[0]`);
+//        common.log(`Increment startChar: 0x12==msg[0]`);
         startChar++; // sometimes DC2 will arrive with line #1 and sometimes it is in a datagram by itself.
       } // If there are multiple datagrams sent with 1 write only the
       // 1st one will have DC2.  If there is more than one write() in the
@@ -93,7 +93,7 @@ async function main() {
       if (Number.isNaN(nCNCApprovedWorkcenterKey)) {
         throw new Error("Abort: CNCApprovedWorkcenterKey isNAN");
       } else {
-        common.log(`CNCApprovedWorkcenterKey: ${sCNCApprovedWorkcenterKey}`);
+ //       common.log(`CNCApprovedWorkcenterKey: ${sCNCApprovedWorkcenterKey}`);
       }
 
       var sSetNo = msg
@@ -104,7 +104,7 @@ async function main() {
       if (Number.isNaN(nSetNo)) {
         throw new Error("Abort: sSetNo isNAN");
       } else {
-        common.log(`Set No: ${sSetNo}`);
+   //     common.log(`Set No: ${sSetNo}`);
       }
 
       /*
@@ -119,13 +119,13 @@ async function main() {
         // Testing only
         //      if((nSetNo>=1) && (nSetNo<50))
         // All of the remaining data sent is contained in a fixed length 10-byte format
-        util.ProcessToolCounters(
-          mqttClient,
-          transDate,
-          nCNCApprovedWorkcenterKey,
-          nSetNo,
-          msgBody
-        );
+        // util.ProcessToolCounters(
+        //   mqttClient,
+        //   transDate,
+        //   nCNCApprovedWorkcenterKey,
+        //   nSetNo,
+        //   msgBody
+        // );
       }
       if (nSetNo == 60) {
           amh.ProcessToolAssemblyCommand(

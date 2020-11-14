@@ -41,7 +41,7 @@ async function ProcessToolAssemblyCommand(
     common.log(`30. UDP13319=>ProcessToolAssemblyCommand`);
 
     var iMsg = 0;
-    if (msg.length < 30) {
+    if (msg.length < 40) {
       throw new Error(`ProcessToolAssemblyCommand msg.length<30`);
     }
     var sCmd = msg
