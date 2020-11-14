@@ -92,19 +92,19 @@ async function ProcessToolAssemblyCommand(
         );
         break;
       case END_MACHINING:
+        await toolLife.ToolLifeUpdate(
+          mqttClient,
+          transDate,
+          nCNCApprovedWorkcenterKey,
+          nToolVar,
+          nToolCounter
+        );
         timer.EndMachining(
           mqttClient,
           transDate,
           nCNCApprovedWorkcenterKey,
           nPalletNo,
           nToolVar
-        );
-        toolLife.ToolLifeUpdate(
-          mqttClient,
-          transDate,
-          nCNCApprovedWorkcenterKey,
-          nToolVar,
-          nToolCounter
         );
         break;
       case END_MACHINING_NO_TIMER:
