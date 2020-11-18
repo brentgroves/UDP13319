@@ -70,7 +70,10 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
     var objToolVar = ToolLife[nCNCApprovedWorkcenterKey][nToolVar];
     if(nToolCounter===objToolVar.Increment_By)
     {
-      if(objToolVar.RunningEntireTime===1)
+      // I saw a Tool life record with a Run_Quantity of Increment_By and I think
+      // the tool setter set the tool life at 0 ran a set and set it back to 0
+      // because he was helping me.  This check is to prevent that record from getting inserted.
+      if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal>objToolVar.Increment_By))
       {
           /* 
           Case 10:
@@ -89,21 +92,36 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         let tcMsgString = JSON.stringify(tcMsg);
         common.log(`UDP13319.ToolLifeUpdate().12.Published InsToolLifeHistoryV2 => ${tcMsgString}`);
         mqttClient.publish("InsToolLifeHistoryV2", tcMsgString);
- 
-      }else{
-          /* 
+        objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal
+      }
+      // In the case the tool setter is working on the CNC and resets the counter to 0 
+      // multiple times we don't want another ToolLife record inserted because we should have
+      // just inserted one, but we do want to increment this tool run's Running_Total.
+      else if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By))
+      {
+        common.log(`UDP13319.ToolLifeUpdate().13.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By)`);
+        objToolVar.RunningTotal += objToolVar.Increment_By;
+      }else if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal<objToolVar.Increment_By))
+      {
+        // I don't think this case will happen.
+        // The only time Running_Total should be less than Increment_By is when the program first
+        // starts up and in this case RunningEntireTime = 0.
+        common.log(`UDP13319.ToolLifeUpdate().13.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal<objToolVar.Increment_By)`);
+      }
+      else
+      {
+            /* 
           Case 15:
           1. The tool was changed and the counter was set to 0.
           2, The new tool assembly has machined exactly 1 set of parts.
           3. This program has NOT run the entire time.
+          4. If the program has not run the entire time then we are not sure the running total is correct
+          so don't insert a tool life record.
           */
         common.log(`UDP13319.ToolLifeUpdate().15.objToolVar.RunningEntireTime!==1;`);
+        objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal
       } 
-      objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal
       objToolVar.RunningEntireTime = 1;  // This is the start of a new run; so reset this.
-
-
-
     }
     else if (nToolCounter > objToolVar.Increment_By)
     {
