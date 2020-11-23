@@ -59,6 +59,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningTotal = 0;
         ToolLife[nCNCApprovedWorkcenterKey][nToolVar].Current_Value = 0;
         ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningEntireTime = 0;
+        ToolLife[nCNCApprovedWorkcenterKey][nToolVar].IncrementByCheck = 0;
         common.log(`UDP13319.ToolLifeUpdate=${JSON.stringify(ToolLife[nCNCApprovedWorkcenterKey][nToolVar])}`);
       } catch (err) {
         // handle the error
@@ -71,8 +72,12 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
     if(nToolCounter===objToolVar.Increment_By)
     {
       // I saw a Tool life record with a Run_Quantity of Increment_By and I think
-      // the tool setter set the tool life at 0 ran a set and set it back to 0
-      // because he was helping me.  This check is to prevent that record from getting inserted.
+      // the tool setter set the tool life at 0 single stepped through the code calling
+      // OCOM9 then checked the tool and the part saw everything was ok so he reset the 
+      // tool counter to 0 and restarted the program at the beginning of the tool he 
+      // just finished single stepping through which is probably what he should do.  
+      // This check is to prevent a tool change from getting recorded twice with an
+      // Increment_By value.
       if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal>objToolVar.Increment_By))
       {
           /* 
@@ -96,7 +101,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
       }
       // In the case the tool setter is working on the CNC and resets the counter to 0 
       // multiple times we don't want another ToolLife record inserted because we should have
-      // just inserted one, but we do want to increment this tool run's Running_Total.
+      // just inserted one, but we do want to increment this tool Running_Total.
       else if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By))
       {
         common.log(`UDP13319.ToolLifeUpdate().13.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By)`);
@@ -122,21 +127,67 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal
       } 
       objToolVar.RunningEntireTime = 1;  // This is the start of a new run; so reset this.
+      objToolVar.IncrementByCheck = 1;  // Because sometimes we won't see the counter until
+      // it reaches 2 * IncrementBy we use this variable to make sure we still capture the 
+      // Tool Life of the previous run.
     }
-    else if (nToolCounter > objToolVar.Increment_By)
+    else if (nToolCounter === (2*objToolVar.Increment_By))
     {
+      /*
+      This case happened on T8 of P558 LH 6K Knuckles after the tool chipped and was changed.
+      The tool setter changed the tool and single stepped through the code and the counter
+      was updated but the COM9 function was not called. He then may have restarted the program 
+      from the start of the tool he just single stepped through and may have still been in 
+      single step mode.  This time through the counter was updated again and the COM9 function 
+      was called.  The result was a long machining time for the tool and a tool counter that
+      had a value of 2 * IncrementBy.  In this case which is probably not so uncommon we need
+      to make sure that a ToolLife record gets inserted.  
+      */
+      if(objToolVar.IncrementByCheck==!1)
+      { 
+        if(objToolVar.RunningEntireTime===1) 
+        {
+          common.log(`UDP13319.ToolLifeUpdate().16.objToolVar.RunningEntireTime===1;(nToolCounter === (2*objToolVar.Increment_By)`);
+            let tcMsg = {
+            CNC_Approved_Workcenter_Key: nCNCApprovedWorkcenterKey,
+            Tool_Var: nToolVar,
+            Run_Quantity: objToolVar.RunningTotal,
+            Run_Date: transDate
+          };
+
+          let tcMsgString = JSON.stringify(tcMsg);
+          common.log(`UDP13319.ToolLifeUpdate().17.Published InsToolLifeHistoryV2 => ${tcMsgString}`);
+          mqttClient.publish("InsToolLifeHistoryV2", tcMsgString);
+          // so since it has not been set do so now.
+        }
+        objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal to 2 * IncrementBy
+        objToolVar.RunningEntireTime = 1;  // This is the start of a new run; or very close to it 
+      }
+      else if(objToolVar.IncrementByCheck===1)
+      {
+        // In this case we have already set the RunningTotal to the IncrementBy value
+        // so we will increment it rather than set it to the IncrementBy value because it is 
+        // possible that the RunningTotal is already twice the IncrementBy value.
+        objToolVar.RunningTotal+=objToolVar.Increment_By;   
+        objToolVar.IncrementByCheck = 0; // reset this to ensure that we publish the next tool change
+        // if the tool setter has to single step through the code.
+      }
+    }
+    else if (nToolCounter > (2*objToolVar.Increment_By))
+    {
+      // This should not happen unless there is a network problem or the UDP app
+      // is restarted.
       if ((nToolCounter - objToolVar.Increment_By) > objToolVar.Current_Value)
       {
         /*
         Case 20:
-        1. This code has not been running the entire time this 
-        tool has been machining.
-        2. The tool counter has a value > what it should.
-        3. We don't know the true RunningTotal value so RunningEntireTime = 0
-        4. We will not record this run's tool life.
+        1. The tool counter has a value > what it should.
+        2. We don't know the true RunningTotal value so RunningEntireTime = 0
+        3. We will not record this run's tool life.
         */
        objToolVar.RunningEntireTime=0;
-       objToolVar.RunningTotal=nToolCounter; // catch up to what it should be.
+       objToolVar.RunningTotal=nToolCounter; // set this be the tool counter value.  We are not sure what the true value is.
+       
        common.log(`UDP13319.ToolLifeUpdate().20.objToolVar.RunningEntireTime=0;`);
       }
       else if((nToolCounter - objToolVar.Increment_By) === objToolVar.Current_Value)
@@ -156,16 +207,19 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         */
         objToolVar.RunningTotal += objToolVar.Increment_By;
         common.log(`UDP13319.ToolLifeUpdate().28.objToolVar.RunningTotal += objToolVar.Increment_By;`);
-     }
+      }
+      objToolVar.IncrementByCheck = 0; // reset this to ensure that we publish the next tool change
+      // if the tool setter has to single step through the code.
+      // This is probably not necessary because if we missed the 2*IncrementBy case
+      // The running the entire time variable will prevent us from publishing a tool change message.
     }
-    else if (nToolCounter < objToolVar.Increment_By)
+    else
     {
       /*
       Case 30:
-      1. If CNC output is done right after tool counter increment this 
-      case should never happen.
+      1. This case should never happen.
       */
-      common.log(`UDP13319.ToolLifeUpdate().30.nToolCounter < objToolVar.Increment_By`);
+      common.log(`UDP13319.ToolLifeUpdate().30.nToolCounter=${nToolCounter},Current_Value=${objToolVar.Current_Value}`);
     }
     objToolVar.Current_Value = nToolCounter;
     let tcMsg = {
