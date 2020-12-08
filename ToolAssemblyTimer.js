@@ -76,11 +76,18 @@ async function EndMachining(
       Tool_Var: nToolVar,
       Current_Value: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].Current_Value,
       Running_Total: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningTotal,
-      Start_Time:
-        ToolAssemblyTimer[nCNCApprovedWorkcenterKey][nPalletNo][nToolVar].Start_Time,
+      Running_Entire_Time: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningEntireTime,
+      Increment_By_Check: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].IncrementByCheck,
+      Start_Time: ToolAssemblyTimer[nCNCApprovedWorkcenterKey][nPalletNo][nToolVar].Start_Time,
       End_Time: transDate,
     };
+/*
+        ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningTotal = 0;
+        ToolLife[nCNCApprovedWorkcenterKey][nToolVar].Current_Value = 0;
+        ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningEntireTime = 0;
+        ToolLife[nCNCApprovedWorkcenterKey][nToolVar].IncrementByCheck = 0;
 
+*/
     let tcMsgString = JSON.stringify(tcMsg);
     common.log(`Published InsAssemblyMachiningHistory => ${tcMsgString}`);
     mqttClient.publish("InsAssemblyMachiningHistory", tcMsgString);

@@ -104,14 +104,14 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
       // just inserted one, but we do want to increment this tool Running_Total.
       else if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By))
       {
-        common.log(`UDP13319.ToolLifeUpdate().13.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By)`);
+        common.log(`UDP13319.ToolLifeUpdate().13A.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By)`);
         objToolVar.RunningTotal += objToolVar.Increment_By;
       }else if((objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal<objToolVar.Increment_By))
       {
         // I don't think this case will happen.
         // The only time Running_Total should be less than Increment_By is when the program first
         // starts up and in this case RunningEntireTime = 0.
-        common.log(`UDP13319.ToolLifeUpdate().13.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal<objToolVar.Increment_By)`);
+        common.log(`UDP13319.ToolLifeUpdate().13B.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal<objToolVar.Increment_By)`);
       }
       else
       {
@@ -123,7 +123,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
           4. If the program has not run the entire time then we are not sure the running total is correct
           so don't insert a tool life record.
           */
-        common.log(`UDP13319.ToolLifeUpdate().15.objToolVar.RunningEntireTime!==1;`);
+        common.log(`UDP13319.ToolLifeUpdate().15.objToolVar.RunningEntireTime==${objToolVar.RunningEntireTime};objToolVar.RunningTotal==${objToolVar.RunningTotal};`);
         objToolVar.RunningTotal=nToolCounter;  // Reset RunningTotal
       } 
       objToolVar.RunningEntireTime = 1;  // This is the start of a new run; so reset this.
@@ -182,13 +182,19 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         /*
         Case 20:
         1. The tool counter has a value > what it should.
-        2. We don't know the true RunningTotal value so RunningEntireTime = 0
-        3. We will not record this run's tool life.
+        2. We don't know the true RunningTotal value so RunningEntireTime = 0 -- SEE BUG FIX NOTE BELOW
+        3. We will not record this run's tool life unless we have only skipped 1 counter value.
         */
-       objToolVar.RunningEntireTime=0;
-       objToolVar.RunningTotal=nToolCounter; // set this be the tool counter value.  We are not sure what the true value is.
+       // BUG FIX; Found out that sometimes we miss creating a record. Either from
+       // an intermittent network issue or the node app is being overwhelmed.
+       // If only 1 expected counter value is skipped then do not invalidate this run. 
+        if((nToolCounter - (2*objToolVar.Increment_By)) > objToolVar.Current_Value)
+        {
+          objToolVar.RunningEntireTime=0;
+        }
+        objToolVar.RunningTotal=nToolCounter; // set this be the tool counter value.  We are not sure what the true value is.
        
-       common.log(`UDP13319.ToolLifeUpdate().20.objToolVar.RunningEntireTime=0;`);
+        common.log(`UDP13319.ToolLifeUpdate().20.objToolVar.RunningEntireTime=0;nToolCounter=${nToolCounter},objToolVar.Current_Value=${objToolVar.Current_Value}`);
       }
       else if((nToolCounter - objToolVar.Increment_By) === objToolVar.Current_Value)
       {
