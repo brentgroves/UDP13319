@@ -78,6 +78,7 @@ async function EndMachining(
       Running_Total: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningTotal,
       Running_Entire_Time: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].RunningEntireTime,
       Increment_By_Check: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].IncrementByCheck,
+      Zero_Detect: ToolLife[nCNCApprovedWorkcenterKey][nToolVar].ZeroDetect,
       Start_Time: ToolAssemblyTimer[nCNCApprovedWorkcenterKey][nPalletNo][nToolVar].Start_Time,
       End_Time: transDate,
     };
