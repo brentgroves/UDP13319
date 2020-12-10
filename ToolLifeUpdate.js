@@ -103,6 +103,15 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
     }
     else if(nToolCounter===objToolVar.Increment_By)
     {
+      /*
+      We started this run at zero, and we have published InsToolLifeHistoryV2 if RunningEntireTime was 1.
+      The only other thing to do is increment RunningTotal.
+      */
+      if((1===objToolVar.RunningEntireTime)&&(1===objToolVar.ZeroDetect))
+      {
+        common.log(`UDP13319.ToolLifeUpdate().9.(objToolVar.RunningEntireTime===1)&&(1===objToolVar.ZeroDetect)`);
+        objToolVar.RunningTotal += objToolVar.Increment_By;
+      }
       // I saw a Tool life record with a Run_Quantity of Increment_By and I think
       // the tool setter set the tool life at 0 single stepped through the code calling
       // OCOM9 then checked the tool and the part saw everything was ok so he reset the 
@@ -110,7 +119,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
       // just finished single stepping through which is probably what he should do.  
       // This check is to prevent a tool change from getting recorded twice with an
       // Increment_By value.
-      if((1===objToolVar.RunningEntireTime)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal>objToolVar.Increment_By))
+      else if((1===objToolVar.RunningEntireTime)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal>objToolVar.Increment_By))
       {
           /* 
           Case 10:
@@ -137,11 +146,11 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
       // multiple times we don't want another ToolLife record inserted because we should have
       // just inserted one, but we do want to increment this tool Running_Total.
       // This is a strange occurrence but this condition was detected while testing CNC 120.
-      else if((objToolVar.RunningEntireTime===1)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal===objToolVar.Increment_By))
+      else if((1===objToolVar.RunningEntireTime)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal===objToolVar.Increment_By))
       {
         common.log(`UDP13319.ToolLifeUpdate().13A.(objToolVar.RunningEntireTime===1)&&(objToolVar.RunningTotal===objToolVar.Increment_By)`);
         objToolVar.RunningTotal += objToolVar.Increment_By;
-      }else if((objToolVar.RunningEntireTime===1)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal<objToolVar.Increment_By))
+      }else if((1===objToolVar.RunningEntireTime)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal<objToolVar.Increment_By))
       {
         // This run did not start at 0.
         // I don't think this case will happen.
@@ -149,7 +158,7 @@ async function ToolLifeUpdate(mqttClient,transDate,nCNCApprovedWorkcenterKey,nTo
         // starts up and in this case RunningEntireTime = 0.
         common.log(`UDP13319.ToolLifeUpdate().13B.(objToolVar.RunningEntireTime===1)&&(0===objToolVar.ZeroDetect)&&(objToolVar.RunningTotal<objToolVar.Increment_By)`);
       }
-      else if((objToolVar.RunningEntireTime===0)&&(0===objToolVar.ZeroDetect))
+      else if((0===objToolVar.RunningEntireTime)&&(0===objToolVar.ZeroDetect))
       {
             /* 
           Case 15:
