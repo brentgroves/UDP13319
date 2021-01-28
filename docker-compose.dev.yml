@@ -1,0 +1,92 @@
+version: '3'
+
+services:
+  tracker13319:
+    image: brentgroves/udp13319:1.0.0
+    depends_on:
+      - db
+    container_name: udp13319
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_HOSTNAME=db
+      - MYSQL_PORT=$MYSQL_PORT 
+      - MYSQL_USERNAME=$MYSQL_USERNAME
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MSSQL_USER=$MSSQL_USER
+      - MSSQL_PASSWORD=$MSSQL_PASSWORD
+      - MSSQL_DATABASE=$MSSQL_DATABASE
+      - MSSQL_SERVER=$MSSQL_SERVER
+      - KORS_USERNAME=$KORS_USERNAME
+      - KORS_PASSWORD=$KORS_PASSWORD
+      - KORS_DATABASE=$KORS_DATABASE
+      - KORS_SERVER=$KORS_SERVER
+      - FEATHERS_PORT=$FEATHERS_PORT
+      - OPCUA_ENDPOINT=$OPCUA_ENDPOINT
+      - MQTT_SERVER=mqtt2
+      - MQTT_PORT=$MQTT_PORT
+      - PROD_WSDL=$PROD_WSDL
+      - TEST_WSDL=$TEST_WSDL
+      - ALBION_USER=$ALBION_USER
+      - ALBION_PASSWORD=$ALBION_PASSWORD
+      - AVILLA_USER=$AVILLA_USER
+      - AVILLA_PASSWORD=$AVILLA_PASSWORD
+      - NODE_ENV=$NODE_ENV
+      - TZ=America/Fort_Wayne
+      - VIRTUAL_HOST=$WEBSERVICE_HOST
+      - VIRTUAL_PORT=3030
+    networks:
+      - my-network
+    stdin_open: true  
+    volumes:
+        # Sets the image and containers timezone to that of the host system
+      - /etc/localtime:/etc/localtime:ro
+      - /home/brent/srcnode/App13319/UDP13319:/usr/src/app
+      - udp_node_modules:/usr/src/app/node_modules      
+    # working_dir: /usr/src/app     
+    # Wait for mysql to start before running this app
+    command: ["node", "app.js"]
+
+  db:
+    image: mysql:8.0.19
+    container_name: db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MYSQL_ROOT_PASSWORD=$MYSQL_PASSWORD
+    networks:
+      - my-network
+    ports:
+      # This assumes a sql server is already running on the production server
+      # This allows connection to it from the host using dbeaver
+      # Should stop the host Mysql from booting at start up for better performance
+      - "3305:3306"
+    volumes:
+      # Sets the image and containers timezone to that of the host system
+      - /etc/localtime:/etc/localtime:ro
+      - /var/lib/volumes/mysql:/var/lib/mysql
+      - /etc/volumes/mysql/conf.d:/etc/mysql/conf.d       
+
+  mqtt2:
+    image: eclipse-mosquitto:1.6.10
+    container_name: mqtt2
+    restart: unless-stopped
+    networks:
+      - my-network  
+    ports:
+      # If host has a mosquitto server running we need to map to an alternate port
+      # sudo ss -tulwn | grep LISTEN
+      - "1882:1883"
+    volumes:
+      - /etc/volumes/mosquitto:/mosquitto
+
+
+networks:
+  my-network:
+    driver: bridge
+
+volumes:
+  udp_node_modules:

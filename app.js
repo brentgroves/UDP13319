@@ -2,7 +2,7 @@
 var udp = require("dgram");
 const mqtt = require("mqtt");
 var moment = require("moment");
-const config = require("../Config13319/config.json");
+// const config = require("../Config13319/config.json");
 const common = require("@bgroves/common");
 const { exit } = require("process");
 const { start } = require("repl");
